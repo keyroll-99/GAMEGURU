@@ -104,4 +104,4 @@ npm run type-check # Sprawdzenie typów TypeScript
 Postęp prac można śledzić w pliku `prompts/task.md`.
 
 ---
-Autor: Twój Zespół GameGuru
+Autor: KeyRoll
