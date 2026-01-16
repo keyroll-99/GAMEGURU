@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@nestjs/swagger": "^11.2.5",
+    "swagger-ui-express": "^5.0.1",
+    "vue-toastification": "^2.0.0-rc.5"
+  }
+}

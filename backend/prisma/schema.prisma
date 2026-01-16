@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// PHASE 1: Users & Authentication
+// ==========================================
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  username      String   @unique @db.VarChar(50)
+  password_hash String   @db.VarChar(255)
+  avatar_url    String?  @db.VarChar(500)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  owned_projects   Project[]       @relation("ProjectOwner")
+  project_members  ProjectMember[]
+  node_assignees   NodeAssignee[]
+  node_changes     NodeHistory[]
+
+  @@map("users")
+}
+
+// ==========================================
+// PHASE 2: Projects
+// ==========================================
+
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  owner_id    String   @db.Uuid
+  is_archived Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  owner   User            @relation("ProjectOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  members ProjectMember[]
+  nodes   Node[]
+
+  @@map("projects")
+}
+
+enum ProjectRole {
+  OWNER
+  MEMBER
+}
+
+model ProjectMember {
+  project_id String      @db.Uuid
+  user_id    String      @db.Uuid
+  role       ProjectRole @default(MEMBER)
+  joined_at  DateTime    @default(now())
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([project_id, user_id])
+  @@map("project_members")
+}
+
+// ==========================================
+// PHASE 3: Nodes (Mind Map)
+// ==========================================
+
+enum NodeType {
+  ROOT
+  TASK
+  MILESTONE
+}
+
+enum NodeStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Node {
+  id          String     @id @default(uuid()) @db.Uuid
+  project_id  String     @db.Uuid
+  parent_id   String?    @db.Uuid
+  type        NodeType   @default(TASK)
+  status      NodeStatus @default(TODO)
+  title       String     @db.VarChar(255)
+  description String?    @db.Text
+  order_index Int        @default(0)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  // Relations
+  project   Project        @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent    Node?          @relation("NodeHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  Node[]         @relation("NodeHierarchy")
+  assignees NodeAssignee[]
+  history   NodeHistory[]
+
+  @@index([project_id])
+  @@index([parent_id])
+  @@map("nodes")
+}
+
+model NodeAssignee {
+  node_id String @db.Uuid
+  user_id String @db.Uuid
+
+  // Relations
+  node Node @relation(fields: [node_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([node_id, user_id])
+  @@map("node_assignees")
+}
+
+model NodeHistory {
+  id         String   @id @default(uuid()) @db.Uuid
+  node_id    String   @db.Uuid
+  field_name String   @db.VarChar(50)
+  old_value  String?  @db.Text
+  new_value  String?  @db.Text
+  changed_by String   @db.Uuid
+  changed_at DateTime @default(now())
+
+  // Relations
+  node    Node @relation(fields: [node_id], references: [id], onDelete: Cascade)
+  changer User @relation(fields: [changed_by], references: [id], onDelete: Cascade)
+
+  @@index([node_id])
+  @@map("node_history")
+}
