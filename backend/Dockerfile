@@ -1,20 +1,34 @@
-# Backend Dockerfile
-FROM node:20-alpine
+# Build stage
+FROM node:22.18.0-alpine AS builder
 
 WORKDIR /app
 
-# Instalacja zależności
 COPY package*.json ./
-RUN npm install
+COPY prisma ./prisma/
 
-# Kopiowanie kodu źródłowego
+RUN npm ci
+
 COPY . .
 
-# Generowanie Prisma Client
-RUN npx prisma generate || true
+RUN npx prisma generate
+RUN npm run build
 
-# Expose port
+# Production stage
+FROM node:22.18.0-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+
+RUN npx prisma generate
+
 EXPOSE 3000
 
-# Start development server
-CMD ["npm", "run", "start:dev"]
+CMD ["node", "dist/main"]
