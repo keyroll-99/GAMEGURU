@@ -46,6 +46,10 @@ export interface MoveNodeDto {
   newOrderIndex: number
 }
 
+export interface ReorderChildrenDto {
+  childrenIds: string[]
+}
+
 export interface NodeHistoryEntry {
   id: string
   node_id: string
@@ -107,6 +111,14 @@ export const nodesApi = {
    */
   move: async (nodeId: string, dto: MoveNodeDto): Promise<Node> => {
     const response = await apiClient.patch(`/nodes/${nodeId}/move`, dto)
+    return response.data
+  },
+
+  /**
+   * Zmienia kolejność dzieci węzła
+   */
+  reorderChildren: async (parentId: string, dto: ReorderChildrenDto): Promise<Node[]> => {
+    const response = await apiClient.patch(`/nodes/${parentId}/reorder-children`, dto)
     return response.data
   },
 

@@ -35,20 +35,20 @@
 
       <!-- Mind Map Canvas -->
       <div v-else class="mind-map-view__content">
-        <MindMapCanvas ref="canvasRef">
-          <NodeTree
-            v-if="nodesTree"
-            :node="nodesTree"
-            :selected-node-id="selectedNodeId"
-            @select="handleSelectNode"
-            @toggle="handleToggleNode"
-            @move="handleMoveNode"
-            @node-contextmenu="openContextMenu"
-          />
-          <div v-else class="mind-map-view__empty">
-            Brak węzłów. Utwórz pierwszy węzeł klikając "Dodaj węzeł".
-          </div>
-        </MindMapCanvas>
+        <MindMapFlow
+          ref="mindMapRef"
+          :nodes-tree="nodesTree"
+          :selected-node-id="selectedNodeId"
+          :all-nodes="allNodes"
+          @select-node="handleSelectNode"
+          @deselect-node="handleDeselectNode"
+          @toggle-expand="handleToggleNode"
+          @node-contextmenu="openContextMenu"
+          @reorder-children="handleReorderChildren"
+        />
+        <div v-if="!nodesTree" class="mind-map-view__empty">
+          Brak węzłów. Utwórz pierwszy węzeł klikając "Dodaj węzeł".
+        </div>
 
         <!-- Sidebar z szczegółami -->
         <aside v-if="selectedNode" class="mind-map-view__sidebar">
@@ -110,7 +110,7 @@
                     <div class="sidebar__assignee-avatar">
                       <img
                         v-if="assignee.user.avatar_url"
-                        :src="getAvatarUrl(assignee.user.avatar_url)"
+                        :src="getAvatarUrl(assignee.user.avatar_url) ?? undefined"
                         :alt="assignee.user.username"
                       />
                       <span v-else>{{ assignee.user.username.charAt(0).toUpperCase() }}</span>
@@ -147,6 +147,13 @@
               <div class="sidebar__field">
                 <button class="btn btn--secondary btn--full" @click="handleAddChildNode">
                   + Dodaj dziecko
+                </button>
+              </div>
+
+              <!-- Reorder children button -->
+              <div v-if="selectedNodeHasChildren" class="sidebar__field">
+                <button class="btn btn--secondary btn--full" @click="openChildrenPanel">
+                  ⇅ Sortuj zadania
                 </button>
               </div>
 
@@ -233,7 +240,7 @@ import { useRoute } from 'vue-router'
 import { onKeyStroke } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { MindMapCanvas, NodeTree } from '@/components/mindmap'
+import { MindMapFlow } from '@/components/mindmap'
 import { useNodesStore } from '@/stores/nodes'
 import { projectsApi, type ProjectMember } from '@/api/projects'
 import type { NodeType, NodeStatus } from '@/api/nodes'
@@ -243,7 +250,7 @@ const nodesStore = useNodesStore()
 const toast = useToast()
 
 // Refs
-const canvasRef = ref<InstanceType<typeof MindMapCanvas> | null>(null)
+const mindMapRef = ref<InstanceType<typeof MindMapFlow> | null>(null)
 
 // Project members for assignee dropdown
 const projectMembers = ref<ProjectMember[]>([])
@@ -256,6 +263,7 @@ const nodesTree = computed(() => nodesStore.nodesTree)
 const selectedNodeId = computed(() => nodesStore.selectedNodeId)
 const selectedNode = computed(() => nodesStore.selectedNode)
 const rootNode = computed(() => nodesStore.rootNode)
+const allNodes = computed(() => nodesStore.nodes)
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -300,6 +308,12 @@ const availableAssignees = computed(() => {
   if (!selectedNode.value) return []
   const assignedIds = new Set(selectedNode.value.assignees.map(a => a.user.id))
   return projectMembers.value.filter(m => !assignedIds.has(m.user_id))
+})
+
+// Check if selected node has children for reorder button
+const selectedNodeHasChildren = computed(() => {
+  if (!selectedNode.value) return false
+  return allNodes.value.some(n => n.parent_id === selectedNode.value!.id)
 })
 
 // Context Menu state
@@ -478,6 +492,24 @@ const handleMoveNode = async (nodeId: string, newParentId: string, newIndex: num
   } catch(e) {
       toast.error('Błąd podczas przenoszenia węzła')
       console.error('Failed to move node:', e)
+  }
+}
+
+// Reorder children handler
+const handleReorderChildren = async (parentId: string, childrenIds: string[]) => {
+  try {
+    await nodesStore.reorderChildren(parentId, childrenIds)
+    // Nie pokazujemy toast - UI i tak się aktualizuje natychmiast
+  } catch (e) {
+    toast.error('Błąd podczas zmiany kolejności')
+    console.error('Failed to reorder children:', e)
+  }
+}
+
+// Open children panel in MindMapFlow component
+const openChildrenPanel = () => {
+  if (selectedNode.value && mindMapRef.value) {
+    mindMapRef.value.openChildrenPanel(selectedNode.value.id)
   }
 }
 </script>

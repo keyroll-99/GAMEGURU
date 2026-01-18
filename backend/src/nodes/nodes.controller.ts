@@ -15,6 +15,7 @@ import {
   UpdateNodeDto,
   MoveNodeDto,
   AddAssigneeDto,
+  ReorderChildrenDto,
 } from './dto';
 import { CurrentUser } from '../auth/decorators';
 import { JwtAuthGuard } from '../auth/guards';
@@ -87,6 +88,18 @@ export class NodesController {
     @CurrentUser('id') userId: string,
   ) {
     return this.nodesService.move(id, dto, userId);
+  }
+
+  /**
+   * PATCH /nodes/:id/reorder-children - zmienia kolejność dzieci węzła
+   */
+  @Patch('nodes/:id/reorder-children')
+  reorderChildren(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReorderChildrenDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.nodesService.reorderChildren(id, dto, userId);
   }
 
   /**

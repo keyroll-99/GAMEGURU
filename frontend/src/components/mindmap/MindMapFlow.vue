@@ -1,0 +1,309 @@
+<template>
+  <div class="mind-map-flow">
+    <VueFlow
+      v-model:nodes="nodes"
+      v-model:edges="edges"
+      :default-viewport="{ x: 50, y: 50, zoom: 1 }"
+      :min-zoom="0.25"
+      :max-zoom="2"
+      :fit-view-on-init="true"
+      :nodes-draggable="true"
+      :nodes-connectable="false"
+      :edges-updatable="false"
+      :auto-connect="false"
+      @node-click="handleNodeClick"
+      @node-drag-stop="handleNodeDragStop"
+      @pane-click="handlePaneClick"
+      @node-context-menu="handleNodeContextMenu"
+    >
+      <Background pattern-color="#e2e8f0" :gap="20" />
+      <Controls position="top-right" />
+      <MiniMap position="bottom-right" />
+
+      <!-- Custom node types -->
+      <template #node-mindmap="nodeProps">
+        <MindMapNode
+          :data="nodeProps.data"
+          :selected="nodeProps.selected"
+          @toggle-expand="handleToggleExpand"
+        />
+      </template>
+    </VueFlow>
+
+    <!-- Children Reorder Panel -->
+    <Transition name="slide">
+      <div v-if="showChildrenPanel" class="children-panel">
+        <ChildrenPanel
+          :parent-node="selectedParentNode"
+          :children="selectedNodeChildren"
+          @close="closeChildrenPanel"
+          @reorder="handleReorderChildren"
+        />
+      </div>
+    </Transition>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { Background } from '@vue-flow/background'
+import { Controls } from '@vue-flow/controls'
+import { MiniMap } from '@vue-flow/minimap'
+import type { Node as FlowNode, Edge } from '@vue-flow/core'
+import MindMapNode from './MindMapNode.vue'
+import ChildrenPanel from './ChildrenPanel.vue'
+import type { TreeNode } from '@/stores/nodes'
+import type { Node } from '@/api/nodes'
+
+const props = defineProps<{
+  nodesTree: TreeNode | null
+  selectedNodeId: string | null
+  allNodes: Node[]
+}>()
+
+const emit = defineEmits<{
+  'select-node': [nodeId: string]
+  'deselect-node': []
+  'toggle-expand': [nodeId: string]
+  'node-contextmenu': [payload: { event: MouseEvent; nodeId: string }]
+  'reorder-children': [parentId: string, childrenIds: string[]]
+}>()
+
+const { fitView } = useVueFlow()
+
+// Flow state
+const nodes = ref<FlowNode[]>([])
+const edges = ref<Edge[]>([])
+
+// Children panel state
+const showChildrenPanel = ref(false)
+const selectedParentForReorder = ref<string | null>(null)
+
+const selectedParentNode = computed(() => {
+  if (!selectedParentForReorder.value) return null
+  return props.allNodes.find(n => n.id === selectedParentForReorder.value) || null
+})
+
+const selectedNodeChildren = computed(() => {
+  if (!selectedParentForReorder.value) return []
+  return props.allNodes
+    .filter(n => n.parent_id === selectedParentForReorder.value)
+    .sort((a, b) => a.order_index - b.order_index)
+})
+
+// Layout configuration
+const HORIZONTAL_SPACING = 250
+const VERTICAL_SPACING = 80
+const NODE_HEIGHT = 50
+
+/**
+ * Konwertuje drzewo na węzły i krawędzie Vue Flow z poziomym layoutem
+ */
+function convertTreeToFlow(tree: TreeNode | null): { nodes: FlowNode[]; edges: Edge[] } {
+  if (!tree) return { nodes: [], edges: [] }
+
+  const flowNodes: FlowNode[] = []
+  const flowEdges: Edge[] = []
+
+  function calculateSubtreeHeight(node: TreeNode): number {
+    if (!node.isExpanded || node.children.length === 0) {
+      return NODE_HEIGHT
+    }
+    
+    const childrenHeights = node.children.map(child => calculateSubtreeHeight(child))
+    const totalHeight = childrenHeights.reduce((sum, h) => sum + h, 0) + (node.children.length - 1) * VERTICAL_SPACING
+    
+    return Math.max(NODE_HEIGHT, totalHeight)
+  }
+
+  function traverse(node: TreeNode, level: number = 0, yOffset: number = 0): number {
+    const subtreeHeight = calculateSubtreeHeight(node)
+    const nodeY = yOffset + subtreeHeight / 2 - NODE_HEIGHT / 2
+
+    flowNodes.push({
+      id: node.id,
+      type: 'mindmap',
+      position: { x: level * HORIZONTAL_SPACING, y: nodeY },
+      data: {
+        ...node,
+        hasChildren: node.children.length > 0,
+        childrenCount: node.children.length,
+      },
+    })
+
+    if (node.isExpanded && node.children.length > 0) {
+      let currentY = yOffset
+
+      node.children.forEach((child, index) => {
+        const childHeight = calculateSubtreeHeight(child)
+        
+        // Add edge
+        flowEdges.push({
+          id: `${node.id}-${child.id}`,
+          source: node.id,
+          target: child.id,
+          type: 'smoothstep',
+          animated: false,
+          style: { stroke: '#94a3b8', strokeWidth: 2 },
+        })
+
+        traverse(child, level + 1, currentY)
+        currentY += childHeight + VERTICAL_SPACING
+      })
+    }
+
+    return subtreeHeight
+  }
+
+  traverse(tree, 0, 0)
+
+  return { nodes: flowNodes, edges: flowEdges }
+}
+
+// Watch for tree changes
+watch(
+  () => [props.nodesTree, props.selectedNodeId],
+  () => {
+    const flow = convertTreeToFlow(props.nodesTree)
+    // Update selected state based on selectedNodeId
+    nodes.value = flow.nodes.map(node => ({
+      ...node,
+      selected: node.id === props.selectedNodeId,
+    }))
+    edges.value = flow.edges
+  },
+  { immediate: true, deep: true }
+)
+
+// Handlers
+import type { NodeMouseEvent } from '@vue-flow/core'
+
+function handleNodeClick(event: NodeMouseEvent) {
+  emit('select-node', event.node.id)
+}
+
+function handlePaneClick() {
+  emit('deselect-node')
+}
+
+function handleToggleExpand(nodeId: string) {
+  emit('toggle-expand', nodeId)
+}
+
+function handleNodeDragStop(event: { node: FlowNode }) {
+  // Możemy tutaj dodać logikę zapisywania pozycji
+}
+
+function handleNodeContextMenu(event: NodeMouseEvent) {
+  if (event.event instanceof MouseEvent) {
+    event.event.preventDefault()
+    emit('node-contextmenu', { event: event.event, nodeId: event.node.id })
+  }
+}
+
+// Children panel methods
+function openChildrenPanel(parentId: string) {
+  selectedParentForReorder.value = parentId
+  showChildrenPanel.value = true
+}
+
+function closeChildrenPanel() {
+  showChildrenPanel.value = false
+  selectedParentForReorder.value = null
+}
+
+function handleReorderChildren(childrenIds: string[]) {
+  if (selectedParentForReorder.value) {
+    emit('reorder-children', selectedParentForReorder.value, childrenIds)
+  }
+}
+
+// Expose for parent
+defineExpose({
+  fitView,
+  openChildrenPanel,
+})
+
+onMounted(() => {
+  nextTick(() => {
+    fitView({ padding: 0.2 })
+  })
+})
+</script>
+
+<style>
+/* Import Vue Flow styles */
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+@import '@vue-flow/controls/dist/style.css';
+@import '@vue-flow/minimap/dist/style.css';
+</style>
+
+<style scoped>
+.mind-map-flow {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.mind-map-flow :deep(.vue-flow) {
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.mind-map-flow :deep(.vue-flow__edge-path) {
+  stroke: #94a3b8;
+  stroke-width: 2;
+}
+
+.mind-map-flow :deep(.vue-flow__controls) {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.mind-map-flow :deep(.vue-flow__controls-button) {
+  background: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+}
+
+.mind-map-flow :deep(.vue-flow__controls-button:hover) {
+  background: #f1f5f9;
+}
+
+.mind-map-flow :deep(.vue-flow__minimap) {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+/* Children Panel */
+.children-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: white;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+/* Slide transition */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(100%);
+}
+</style>

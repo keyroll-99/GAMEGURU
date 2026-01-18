@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { nodesApi, type Node, type CreateNodeDto, type UpdateNodeDto, type MoveNodeDto } from '@/api/nodes'
+import { nodesApi, type Node, type CreateNodeDto, type UpdateNodeDto, type MoveNodeDto, type ReorderChildrenDto } from '@/api/nodes'
 
 export interface TreeNode extends Node {
   children: TreeNode[]
@@ -155,16 +155,42 @@ export const useNodesStore = defineStore('nodes', () => {
       const index = nodes.value.findIndex((n) => n.id === nodeId)
       if (index !== -1) {
         // Zaktualizuj parent_id i order_index
-        nodes.value[index] = {
-          ...nodes.value[index],
-          parent_id: movedNode.parent_id,
-          order_index: movedNode.order_index,
+        const node = nodes.value[index]
+        if (node) {
+          node.parent_id = movedNode.parent_id
+          node.order_index = movedNode.order_index
         }
       }
       
       return movedNode
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Błąd podczas przenoszenia węzła'
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const reorderChildren = async (parentId: string, childrenIds: string[]) => {
+    isLoading.value = true
+    error.value = null
+    try {
+      const updatedNodes = await nodesApi.reorderChildren(parentId, { childrenIds })
+      
+      // Aktualizuj order_index dla wszystkich dzieci
+      updatedNodes.forEach((updatedNode) => {
+        const index = nodes.value.findIndex((n) => n.id === updatedNode.id)
+        if (index !== -1) {
+          const node = nodes.value[index]
+          if (node) {
+            node.order_index = updatedNode.order_index
+          }
+        }
+      })
+      
+      return updatedNodes
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Błąd podczas zmiany kolejności'
       throw e
     } finally {
       isLoading.value = false
@@ -253,6 +279,7 @@ export const useNodesStore = defineStore('nodes', () => {
     updateNode,
     deleteNode,
     moveNode,
+    reorderChildren,
     addAssignee,
     removeAssignee,
     selectNode,

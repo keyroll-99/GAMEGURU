@@ -40,7 +40,7 @@
       >
         <img
           v-if="assignee.user.avatar_url"
-          :src="getAvatarUrl(assignee.user.avatar_url)"
+          :src="getAvatarUrl(assignee.user.avatar_url) ?? undefined"
           :alt="assignee.user.username"
         />
         <span v-else>{{ assignee.user.username.charAt(0).toUpperCase() }}</span>

@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { CreateNodeDto, UpdateNodeDto, MoveNodeDto } from './dto';
+import { CreateNodeDto, UpdateNodeDto, MoveNodeDto, ReorderChildrenDto } from './dto';
 import { NodeType } from '@prisma/client';
 
 @Injectable()
@@ -401,6 +401,56 @@ export class NodesService {
       },
       orderBy: { changed_at: 'desc' },
     });
+  }
+
+  /**
+   * Zmienia kolejność dzieci węzła (sortowanie priorytetów)
+   */
+  async reorderChildren(parentId: string, dto: ReorderChildrenDto, userId: string) {
+    const parentNode = await this.findOne(parentId, userId);
+
+    // Pobierz aktualne dzieci
+    const currentChildren = await this.prisma.node.findMany({
+      where: { parent_id: parentId },
+      select: { id: true },
+    });
+
+    const currentChildrenIds = new Set(currentChildren.map(c => c.id));
+
+    // Waliduj że wszystkie podane ID są dziećmi tego węzła
+    for (const childId of dto.childrenIds) {
+      if (!currentChildrenIds.has(childId)) {
+        throw new BadRequestException(`Node ${childId} is not a child of ${parentId}`);
+      }
+    }
+
+    // Waliduj że podano wszystkie dzieci
+    if (dto.childrenIds.length !== currentChildren.length) {
+      throw new BadRequestException('Must provide all children IDs in new order');
+    }
+
+    // Aktualizuj order_index dla każdego dziecka
+    const updates = dto.childrenIds.map((childId, index) =>
+      this.prisma.node.update({
+        where: { id: childId },
+        data: { order_index: index },
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatar_url: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    );
+
+    return this.prisma.$transaction(updates);
   }
 
   /**
