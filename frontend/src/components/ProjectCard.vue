@@ -157,10 +157,8 @@ function handleClick() {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-heading);
+  color: #1e293b;
+  word-wrap: break-word;
 }
 
 .badges {
