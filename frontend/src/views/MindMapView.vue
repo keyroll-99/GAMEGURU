@@ -19,6 +19,14 @@
           <button class="btn btn--primary" @click="handleAddNode">
             + Dodaj węzeł
           </button>
+          <router-link 
+            v-if="isOwner" 
+            :to="{ name: 'project-settings', params: { id: projectId } }" 
+            class="btn btn--icon"
+            title="Ustawienia projektu"
+          >
+            ⚙️
+          </router-link>
         </div>
       </header>
 
@@ -45,6 +53,7 @@
           @toggle-expand="handleToggleNode"
           @node-contextmenu="openContextMenu"
           @reorder-children="handleReorderChildren"
+          @change-parent="handleChangeParent"
         />
         <div v-if="!nodesTree" class="mind-map-view__empty">
           Brak węzłów. Utwórz pierwszy węzeł klikając "Dodaj węzeł".
@@ -242,15 +251,22 @@ import { useToast } from 'vue-toastification'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { MindMapFlow } from '@/components/mindmap'
 import { useNodesStore } from '@/stores/nodes'
-import { projectsApi, type ProjectMember } from '@/api/projects'
+import { useAuthStore } from '@/stores/auth'
+import { projectsApi, type ProjectMember, type Project } from '@/api/projects'
 import type { NodeType, NodeStatus } from '@/api/nodes'
 
 const route = useRoute()
 const nodesStore = useNodesStore()
+const authStore = useAuthStore()
 const toast = useToast()
 
 // Refs
 const mindMapRef = ref<InstanceType<typeof MindMapFlow> | null>(null)
+
+// Project info
+const currentProject = ref<Project | null>(null)
+const projectId = computed(() => route.params.id as string)
+const isOwner = computed(() => currentProject.value?.owner_id === authStore.user?.id)
 
 // Project members for assignee dropdown
 const projectMembers = ref<ProjectMember[]>([])
@@ -362,11 +378,14 @@ watch(selectedAssigneeId, async (userId) => {
 
 // Load nodes on mount
 const loadNodes = async () => {
-  const projectId = route.params.id as string
-  await nodesStore.fetchNodes(projectId)
+  const id = route.params.id as string
+  await nodesStore.fetchNodes(id)
+  
+  // Fetch project info for owner check
+  currentProject.value = await projectsApi.getById(id)
   
   // Fetch project members for assignee dropdown
-  projectMembers.value = await projectsApi.getMembers(projectId)
+  projectMembers.value = await projectsApi.getMembers(id)
   
   // Set default parent for new nodes
   if (nodesStore.rootNode) {
@@ -492,6 +511,29 @@ const handleMoveNode = async (nodeId: string, newParentId: string, newIndex: num
   } catch(e) {
       toast.error('Błąd podczas przenoszenia węzła')
       console.error('Failed to move node:', e)
+  }
+}
+
+// Handle parent change from drag & drop
+const handleChangeParent = async (nodeId: string, newParentId: string) => {
+  try {
+    // Pobierz obecne dzieci nowego rodzica aby obliczyć indeks
+    const siblingCount = allNodes.value.filter(n => n.parent_id === newParentId).length
+    
+    await nodesStore.moveNode(nodeId, {
+      newParentId,
+      newOrderIndex: siblingCount, // Dodaj na końcu listy dzieci
+    })
+
+    // Rozwiń nowego rodzica aby pokazać przeniesiony węzeł
+    if (!nodesStore.isExpanded(newParentId)) {
+      nodesStore.toggleExpand(newParentId)
+    }
+    
+    toast.success('Węzeł przeniesiony')
+  } catch(e) {
+      toast.error('Błąd podczas przenoszenia węzła')
+      console.error('Failed to change parent:', e)
   }
 }
 
@@ -959,5 +1001,25 @@ const openChildrenPanel = () => {
   gap: 8px;
   padding: 16px 20px;
   margin-top: 8px;
+}
+
+.btn--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn--icon:hover {
+  background: #e2e8f0;
 }
 </style>

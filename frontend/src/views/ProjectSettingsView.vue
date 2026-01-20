@@ -24,6 +24,7 @@ const isInviting = ref(false)
 const isTransferring = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const linkCopied = ref(false)
 
 // Computed
 const isOwner = computed(() => 
@@ -33,6 +34,11 @@ const isOwner = computed(() =>
 const otherMembers = computed(() => 
   projectsStore.members.filter(m => m.user_id !== authStore.user?.id)
 )
+
+const projectLink = computed(() => {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/mind-map/${projectId.value}`
+})
 
 onMounted(async () => {
   await loadProject()
@@ -94,6 +100,18 @@ async function inviteMember() {
     showSuccess('Użytkownik został zaproszony')
   } else {
     showError(result.message)
+  }
+}
+
+async function copyProjectLink() {
+  try {
+    await navigator.clipboard.writeText(projectLink.value)
+    linkCopied.value = true
+    setTimeout(() => {
+      linkCopied.value = false
+    }, 2000)
+  } catch (e) {
+    showError('Nie udało się skopiować linku')
   }
 }
 
@@ -242,6 +260,27 @@ function goBack() {
           >
             {{ isInviting ? 'Zapraszanie...' : 'Zaproś' }}
           </button>
+        </div>
+
+        <!-- Copy project link -->
+        <div v-if="isOwner" class="invite-link">
+          <p class="invite-hint">
+            Aby zaprosić użytkownika, musi on być zarejestrowany. Skopiuj link do projektu i wyślij go znajomemu:
+          </p>
+          <div class="invite-link-row">
+            <input 
+              type="text" 
+              :value="projectLink" 
+              readonly 
+              class="invite-link-input"
+            />
+            <button 
+              class="btn btn-secondary" 
+              @click="copyProjectLink"
+            >
+              {{ linkCopied ? '✓ Skopiowano!' : '📋 Kopiuj link' }}
+            </button>
+          </div>
         </div>
 
         <!-- Members list -->
@@ -625,5 +664,44 @@ function goBack() {
 
 .btn-danger-outline:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.invite-link {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.invite-hint {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.invite-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-link-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  color: #64748b;
 }
 </style>

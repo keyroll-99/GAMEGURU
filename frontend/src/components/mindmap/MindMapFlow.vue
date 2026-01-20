@@ -12,6 +12,7 @@
       :edges-updatable="false"
       :auto-connect="false"
       @node-click="handleNodeClick"
+      @node-drag-start="handleNodeDragStart"
       @node-drag-stop="handleNodeDragStop"
       @pane-click="handlePaneClick"
       @node-context-menu="handleNodeContextMenu"
@@ -68,9 +69,10 @@ const emit = defineEmits<{
   'toggle-expand': [nodeId: string]
   'node-contextmenu': [payload: { event: MouseEvent; nodeId: string }]
   'reorder-children': [parentId: string, childrenIds: string[]]
+  'change-parent': [nodeId: string, newParentId: string]
 }>()
 
-const { fitView } = useVueFlow()
+const { fitView, getNodes } = useVueFlow()
 
 // Flow state
 const nodes = ref<FlowNode[]>([])
@@ -191,8 +193,96 @@ function handleToggleExpand(nodeId: string) {
   emit('toggle-expand', nodeId)
 }
 
+// Przechowuje oryginalną pozycję węzła przed rozpoczęciem przeciągania
+const dragStartPositions = ref<Map<string, { x: number; y: number }>>(new Map())
+
+function handleNodeDragStart(event: { node: FlowNode }) {
+  // Zapisujemy oryginalną pozycję przed rozpoczęciem przeciągania
+  dragStartPositions.value.set(event.node.id, { 
+    x: event.node.position.x, 
+    y: event.node.position.y 
+  })
+}
+
 function handleNodeDragStop(event: { node: FlowNode }) {
-  // Możemy tutaj dodać logikę zapisywania pozycji
+  const draggedNode = event.node
+  const draggedNodeData = draggedNode.data as TreeNode
+  
+  // Nie pozwalaj na przenoszenie węzła ROOT
+  if (draggedNodeData.type === 'ROOT') {
+    resetNodePosition(draggedNode.id)
+    return
+  }
+  
+  // Znajdź węzeł nad którym upuszczono
+  const allFlowNodes = getNodes.value
+  const targetNode = findDropTarget(draggedNode, allFlowNodes)
+  
+  if (targetNode && targetNode.id !== draggedNode.id) {
+    const targetNodeData = targetNode.data as TreeNode
+    const currentParentId = props.allNodes.find(n => n.id === draggedNode.id)?.parent_id
+    
+    // Sprawdź czy to nie jest upuszczenie na tego samego rodzica
+    if (targetNode.id !== currentParentId) {
+      // Sprawdź czy nie próbujemy przenieść węzła do jego własnego potomka
+      if (!isDescendant(draggedNode.id, targetNode.id)) {
+        emit('change-parent', draggedNode.id, targetNode.id)
+      }
+    }
+  }
+  
+  // Zawsze resetujemy pozycję - layout jest kontrolowany przez drzewo
+  resetNodePosition(draggedNode.id)
+}
+
+function resetNodePosition(nodeId: string) {
+  const originalPos = dragStartPositions.value.get(nodeId)
+  if (originalPos) {
+    const nodeIndex = nodes.value.findIndex(n => n.id === nodeId)
+    const existingNode = nodes.value[nodeIndex]
+    if (nodeIndex >= 0 && existingNode) {
+      nodes.value[nodeIndex] = {
+        ...existingNode,
+        id: existingNode.id,
+        position: { ...originalPos }
+      }
+    }
+    dragStartPositions.value.delete(nodeId)
+  }
+}
+
+function findDropTarget(draggedNode: FlowNode, allFlowNodes: FlowNode[]): FlowNode | null {
+  const draggedPos = draggedNode.position
+  const THRESHOLD = 100 // Odległość w pikselach do uznania za upuszczenie na węzeł
+  
+  let closestNode: FlowNode | null = null
+  let closestDistance = Infinity
+  
+  for (const node of allFlowNodes) {
+    if (node.id === draggedNode.id) continue
+    
+    // Oblicz odległość między środkami węzłów
+    const dx = node.position.x - draggedPos.x
+    const dy = node.position.y - draggedPos.y
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    
+    if (distance < THRESHOLD && distance < closestDistance) {
+      closestDistance = distance
+      closestNode = node
+    }
+  }
+  
+  return closestNode
+}
+
+function isDescendant(potentialAncestorId: string, nodeId: string): boolean {
+  // Sprawdza czy potentialAncestorId jest przodkiem nodeId
+  // Jeśli tak, to nie możemy przenieść przodka do potomka
+  const node = props.allNodes.find(n => n.id === nodeId)
+  if (!node) return false
+  if (node.parent_id === potentialAncestorId) return true
+  if (!node.parent_id) return false
+  return isDescendant(potentialAncestorId, node.parent_id)
 }
 
 function handleNodeContextMenu(event: NodeMouseEvent) {
