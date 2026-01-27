@@ -15,7 +15,11 @@ const authStore = useAuthStore()
 const toast = useToast()
 
 const projectId = computed(() => route.params.id as string)
-const isOwner = computed(() => projectsStore.currentProject?.owner_id === authStore.user?.id)
+const isOwner = computed(() =>
+  !!projectsStore.currentProject &&
+  !!authStore.user &&
+  projectsStore.currentProject.owner_id === authStore.user.id
+)
 
 const notes = computed(() => notesStore.notes)
 const currentNote = computed(() => notesStore.currentNote)
@@ -25,14 +29,17 @@ const editContent = ref('')
 const activeTab = ref<'edit' | 'preview'>('edit')
 
 const renderedMarkdown = computed(() => {
-  return marked(editContent.value || '')
+  return marked.parseSync(editContent.value || '')
 })
 
 onMounted(async () => {
-  if (!projectsStore.currentProject || projectsStore.currentProject.id !== projectId.value) {
-    await projectsStore.fetchProject(projectId.value)
+  const id = projectId.value
+  if (!id) return
+
+  if (!projectsStore.currentProject || projectsStore.currentProject.id !== id) {
+    await projectsStore.fetchProject(id)
   }
-  await notesStore.fetchNotes(projectId.value)
+  await notesStore.fetchNotes(id)
 })
 
 watch(currentNote, (newNote) => {

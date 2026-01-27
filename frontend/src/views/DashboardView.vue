@@ -39,11 +39,11 @@ function closeCreateModal() {
 }
 
 function handleProjectCreated(projectId: string) {
-  router.push(`/projects/${projectId}/map`)
+  router.push(`/projects/${projectId}/board`)
 }
 
 function handleProjectClick(project: Project) {
-  router.push(`/projects/${project.id}/map`)
+  router.push(`/projects/${project.id}/board`)
 }
 </script>
 
