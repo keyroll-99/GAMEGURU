@@ -36,6 +36,13 @@ const route = useRoute()
         <span class="tab-icon">🗺️</span> Mapa Myśli
       </router-link>
       <router-link
+        :to="{ name: 'project-story', params: { id: projectId } }"
+        class="nav-tab"
+        :class="{ 'nav-tab--active': route.name === 'project-story' }"
+      >
+        <span class="tab-icon">📖</span> Fabuła
+      </router-link>
+      <router-link
         :to="{ name: 'project-notes', params: { id: projectId } }"
         class="nav-tab"
         :class="{ 'nav-tab--active': route.name === 'project-notes' }"
