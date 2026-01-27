@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import { marked } from 'marked'
 import { useToast } from 'vue-toastification'
+import { useDebounceFn } from '@vueuse/core'
 
 const route = useRoute()
 const projectsStore = useProjectsStore()
@@ -27,9 +28,11 @@ const currentNote = computed(() => notesStore.currentNote)
 const editTitle = ref('')
 const editContent = ref('')
 const activeTab = ref<'edit' | 'preview'>('edit')
+const isSaving = ref(false)
+const hasUnsavedChanges = ref(false)
 
 const renderedMarkdown = computed(() => {
-  return marked.parseSync(editContent.value || '')
+  return marked.parse(editContent.value || '')
 })
 
 onMounted(async () => {
@@ -42,13 +45,63 @@ onMounted(async () => {
   await notesStore.fetchNotes(id)
 })
 
+async function saveNote(showSuccessToast: boolean = false) {
+  if (!currentNote.value) return
+  if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) {
+    hasUnsavedChanges.value = false
+    return
+  }
+
+  isSaving.value = true
+  try {
+    const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
+      title: editTitle.value,
+      content: editContent.value
+    })
+    
+    if (result.success) {
+      hasUnsavedChanges.value = false
+      if (showSuccessToast) {
+        toast.success('Notatka zapisana')
+      }
+    } else {
+      toast.error(result.message || 'Błąd zapisu')
+    }
+  } catch (error) {
+    toast.error('Błąd zapisu')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function saveCurrentNote() {
+  await saveNote(true)
+}
+
+// Debounced version of save for auto-save
+const debouncedSave = useDebounceFn(async () => {
+  await saveNote(false)
+}, 1000) // 1 second debounce
+
 watch(currentNote, (newNote) => {
   if (newNote) {
     editTitle.value = newNote.title
     editContent.value = newNote.content
+    hasUnsavedChanges.value = false
   } else {
     editTitle.value = ''
     editContent.value = ''
+    hasUnsavedChanges.value = false
+  }
+})
+
+// Watch for changes in title and content to trigger debounced auto-save
+watch([editTitle, editContent], () => {
+  if (currentNote.value && !isSaving.value) {
+    if (editTitle.value !== currentNote.value.title || editContent.value !== currentNote.value.content) {
+      hasUnsavedChanges.value = true
+      debouncedSave()
+    }
   }
 })
 
@@ -67,19 +120,6 @@ async function handleCreateNote() {
     activeTab.value = 'edit'
   } else {
     toast.error(result.message || 'Błąd tworzenia notatki')
-  }
-}
-
-async function saveCurrentNote() {
-  if (!currentNote.value) return
-  if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) return
-
-  const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
-    title: editTitle.value,
-    content: editContent.value
-  })
-  if (!result.success) {
-    toast.error(result.message || 'Błąd zapisu')
   }
 }
 
@@ -141,10 +181,18 @@ function formatDate(dateStr: string) {
                 type="text"
                 class="note-title-input"
                 placeholder="Tytuł notatki..."
-                @blur="saveCurrentNote"
               />
               <div class="note-editor__actions">
-                 <button class="btn btn--danger-outline" @click="handleDeleteNote">Usuń</button>
+                <button 
+                  class="btn btn--success" 
+                  @click="saveCurrentNote"
+                  :disabled="isSaving || !hasUnsavedChanges"
+                >
+                  <span v-if="isSaving">Zapisywanie...</span>
+                  <span v-else-if="hasUnsavedChanges">💾 Zapisz</span>
+                  <span v-else>✓ Zapisano</span>
+                </button>
+                <button class="btn btn--danger-outline" @click="handleDeleteNote">Usuń</button>
               </div>
             </div>
             <div class="note-editor__tabs">
@@ -169,7 +217,6 @@ function formatDate(dateStr: string) {
                 v-model="editContent"
                 class="note-content-textarea"
                 placeholder="Napisz coś w Markdown..."
-                @blur="saveCurrentNote"
               ></textarea>
               <div
                 v-else
@@ -271,6 +318,12 @@ function formatDate(dateStr: string) {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+}
+
+.note-editor__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .note-title-input {
@@ -400,5 +453,20 @@ function formatDate(dateStr: string) {
 
 .btn--danger-outline:hover {
   background: #fef2f2;
+}
+
+.btn--success {
+  background: #10b981;
+  color: white;
+}
+
+.btn--success:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn--success:disabled {
+  background: #6ee7b7;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 </style>
