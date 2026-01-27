@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma';
 import { AuthModule } from './auth';
 import { UsersModule } from './users';
 import { ProjectsModule } from './projects';
+import { NotesModule } from './projects/notes';
 import { NodesModule } from './nodes';
 
 @Module({
@@ -23,6 +24,7 @@ import { NodesModule } from './nodes';
     AuthModule,
     UsersModule,
     ProjectsModule,
+    NotesModule,
     NodesModule,
   ],
   controllers: [AppController],
