@@ -29,7 +29,9 @@ const linkCopied = ref(false)
 
 // Computed
 const isOwner = computed(() => 
-  projectsStore.currentProject?.owner_id === authStore.user?.id
+  !!projectsStore.currentProject &&
+  !!authStore.user &&
+  projectsStore.currentProject.owner_id === authStore.user.id
 )
 
 const otherMembers = computed(() => 
@@ -38,7 +40,7 @@ const otherMembers = computed(() =>
 
 const projectLink = computed(() => {
   const baseUrl = window.location.origin
-  return `${baseUrl}/mind-map/${projectId.value}`
+  return `${baseUrl}/projects/${projectId.value}/board`
 })
 
 onMounted(async () => {

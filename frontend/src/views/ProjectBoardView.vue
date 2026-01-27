@@ -240,12 +240,14 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import { MindMapFlow } from '@/components/mindmap'
 import { useNodesStore } from '@/stores/nodes'
+import { useProjectsStore } from '@/stores/projects'
 import { useAuthStore } from '@/stores/auth'
-import { projectsApi, type ProjectMember, type Project } from '@/api/projects'
+import type { ProjectMember } from '@/api/projects'
 import type { NodeType, NodeStatus } from '@/api/nodes'
 
 const route = useRoute()
 const nodesStore = useNodesStore()
+const projectsStore = useProjectsStore()
 const authStore = useAuthStore()
 const toast = useToast()
 
@@ -253,12 +255,16 @@ const toast = useToast()
 const mindMapRef = ref<InstanceType<typeof MindMapFlow> | null>(null)
 
 // Project info
-const currentProject = ref<Project | null>(null)
 const projectId = computed(() => route.params.id as string)
-const isOwner = computed(() => currentProject.value?.owner_id === authStore.user?.id)
+const currentProject = computed(() => projectsStore.currentProject)
+const isOwner = computed(() =>
+  !!currentProject.value &&
+  !!authStore.user &&
+  currentProject.value.owner_id === authStore.user.id
+)
 
 // Project members for assignee dropdown
-const projectMembers = ref<ProjectMember[]>([])
+const projectMembers = computed(() => projectsStore.members)
 const selectedAssigneeId = ref('')
 
 // State from store
@@ -368,13 +374,15 @@ watch(selectedAssigneeId, async (userId) => {
 // Load nodes on mount
 const loadNodes = async () => {
   const id = route.params.id as string
-  await nodesStore.fetchNodes(id)
+  if (!id) return
   
-  // Fetch project info for owner check
-  currentProject.value = await projectsApi.getById(id)
-  
-  // Fetch project members for assignee dropdown
-  projectMembers.value = await projectsApi.getMembers(id)
+  try {
+    await nodesStore.fetchNodes(id)
+    await projectsStore.fetchProject(id)
+    await projectsStore.fetchMembers(id)
+  } catch (e) {
+    console.error('Error loading project data:', e)
+  }
   
   // Set default parent for new nodes
   if (nodesStore.rootNode) {
