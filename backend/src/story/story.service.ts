@@ -238,34 +238,36 @@ export class StoryService {
     }
 
     // Zapisz historię i zaktualizuj element w transakcji
-    if (historyEntries.length > 0) {
-      await this.prisma.storyHistory.createMany({
-        data: historyEntries,
-      });
-    }
+    return this.prisma.$transaction(async (tx) => {
+      if (historyEntries.length > 0) {
+        await tx.storyHistory.createMany({
+          data: historyEntries,
+        });
+      }
 
-    return this.prisma.storyElement.update({
-      where: { id: elementId },
-      data: {
-        title: dto.title,
-        content: dto.content,
-        status: dto.status,
-        metadata: dto.metadata,
-        order_index: dto.orderIndex,
-      },
-      include: {
-        linkedNodes: {
-          include: {
-            node: {
-              select: {
-                id: true,
-                title: true,
-                status: true,
+      return tx.storyElement.update({
+        where: { id: elementId },
+        data: {
+          title: dto.title,
+          content: dto.content,
+          status: dto.status,
+          metadata: dto.metadata,
+          order_index: dto.orderIndex,
+        },
+        include: {
+          linkedNodes: {
+            include: {
+              node: {
+                select: {
+                  id: true,
+                  title: true,
+                  status: true,
+                },
               },
             },
           },
         },
-      },
+      });
     });
   }
 

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEnum,
   IsUUID,
+  IsObject,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StoryElementType } from '@prisma/client';
@@ -37,6 +38,7 @@ export class CreateStoryElementDto {
   content?: string;
 
   @ApiPropertyOptional({ example: { age: 25, role: 'protagonist' } })
+  @IsObject()
   @IsOptional()
   metadata?: Record<string, any>;
 }

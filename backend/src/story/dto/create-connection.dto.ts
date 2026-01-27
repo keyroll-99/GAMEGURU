@@ -1,5 +1,7 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+const CONNECTION_TYPES = ['leads_to', 'branches_to', 'requires'] as const;
 
 export class CreateConnectionDto {
   @ApiProperty({ example: 'uuid-of-target-element' })
@@ -14,9 +16,9 @@ export class CreateConnectionDto {
 
   @ApiPropertyOptional({
     example: 'leads_to',
-    enum: ['leads_to', 'branches_to', 'requires'],
+    enum: CONNECTION_TYPES,
   })
-  @IsString()
+  @IsIn(CONNECTION_TYPES)
   @IsOptional()
   connectionType?: string;
 }

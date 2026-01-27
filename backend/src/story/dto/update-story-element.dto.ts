@@ -1,10 +1,11 @@
-import { IsString, IsOptional, IsEnum, IsInt, Min } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, Min, MinLength, IsObject } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StoryElementStatus } from '@prisma/client';
 
 export class UpdateStoryElementDto {
   @ApiPropertyOptional({ example: 'Nowy tytuł' })
   @IsString()
+  @MinLength(1)
   @IsOptional()
   title?: string;
 
@@ -22,6 +23,7 @@ export class UpdateStoryElementDto {
   status?: StoryElementStatus;
 
   @ApiPropertyOptional({ example: { age: 30 } })
+  @IsObject()
   @IsOptional()
   metadata?: Record<string, any>;
 

@@ -216,6 +216,8 @@ model StoryConnection {
   toElement   StoryElement @relation("ToElement", fields: [to_element_id], references: [id], onDelete: Cascade)
 
   @@unique([from_element_id, to_element_id])
+  @@index([from_element_id])
+  @@index([to_element_id])
   @@map("story_connections")
 }
 
@@ -228,6 +230,8 @@ model NodeStoryLink {
   storyElement StoryElement @relation(fields: [story_element_id], references: [id], onDelete: Cascade)
 
   @@unique([node_id, story_element_id])
+  @@index([node_id])
+  @@index([story_element_id])
   @@map("node_story_links")
 }
 
