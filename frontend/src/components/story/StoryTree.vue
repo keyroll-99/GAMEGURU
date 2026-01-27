@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineComponent, type PropType } from 'vue'
 import { useStoryStore } from '@/stores/story'
 import StoryElementCard from './StoryElementCard.vue'
 import type { TreeStoryElement } from '@/stores/story'
@@ -26,81 +26,12 @@ function handleCreateElement(parentId: string | null, type: StoryElementType) {
   emit('create-element', parentId, type)
 }
 
-function renderTree(elements: TreeStoryElement[], depth = 0) {
-  return elements
-}
-</script>
-
-<template>
-  <div class="story-tree">
-    <div class="story-tree__header">
-      <h3 class="story-tree__title">Hierarchia fabuły</h3>
-      <div class="story-tree__actions">
-        <button
-          class="btn-icon"
-          title="Rozwiń wszystko"
-          @click="storyStore.expandAll()"
-        >
-          ⊞
-        </button>
-        <button
-          class="btn-icon"
-          title="Zwiń wszystko"
-          @click="storyStore.collapseAll()"
-        >
-          ⊟
-        </button>
-        <button
-          class="btn-icon btn-icon--primary"
-          title="Dodaj element główny"
-          @click="handleCreateElement(null, 'OVERVIEW')"
-        >
-          +
-        </button>
-      </div>
-    </div>
-
-    <div class="story-tree__content">
-      <template v-if="storyTree.length === 0">
-        <div class="empty-state">
-          <span class="empty-icon">📖</span>
-          <p>Brak elementów fabuły</p>
-          <button
-            class="btn btn--primary btn--sm"
-            @click="handleCreateElement(null, 'OVERVIEW')"
-          >
-            Dodaj pierwszy element
-          </button>
-        </div>
-      </template>
-
-      <template v-else>
-        <div
-          v-for="element in storyTree"
-          :key="element.id"
-          class="tree-node"
-        >
-          <TreeNode
-            :element="element"
-            :depth="0"
-            :selected-id="selectedElementId"
-            @select="handleSelect"
-            @toggle="handleToggle"
-            @create="handleCreateElement"
-          />
-        </div>
-      </template>
-    </div>
-  </div>
-</template>
-
-<script lang="ts">
 // Rekurencyjny komponent dla renderowania drzewa
-import { defineComponent, type PropType } from 'vue'
-import type { TreeStoryElement } from '@/stores/story'
-
 const TreeNode = defineComponent({
   name: 'TreeNode',
+  components: {
+    StoryElementCard,
+  },
   props: {
     element: {
       type: Object as PropType<TreeStoryElement>,
@@ -169,8 +100,70 @@ const TreeNode = defineComponent({
   `,
 })
 
-export { TreeNode }
 </script>
+
+<template>
+  <div class="story-tree">
+    <div class="story-tree__header">
+      <h3 class="story-tree__title">Hierarchia fabuły</h3>
+      <div class="story-tree__actions">
+        <button
+          class="btn-icon"
+          title="Rozwiń wszystko"
+          @click="storyStore.expandAll()"
+        >
+          ⊞
+        </button>
+        <button
+          class="btn-icon"
+          title="Zwiń wszystko"
+          @click="storyStore.collapseAll()"
+        >
+          ⊟
+        </button>
+        <button
+          class="btn-icon btn-icon--primary"
+          title="Dodaj element główny"
+          @click="handleCreateElement(null, 'OVERVIEW')"
+        >
+          +
+        </button>
+      </div>
+    </div>
+
+    <div class="story-tree__content">
+      <template v-if="storyTree.length === 0">
+        <div class="empty-state">
+          <span class="empty-icon">📖</span>
+          <p>Brak elementów fabuły</p>
+          <button
+            class="btn btn--primary btn--sm"
+            @click="handleCreateElement(null, 'OVERVIEW')"
+          >
+            Dodaj pierwszy element
+          </button>
+        </div>
+      </template>
+
+      <template v-else>
+        <div
+          v-for="element in storyTree"
+          :key="element.id"
+          class="tree-node"
+        >
+          <TreeNode
+            :element="element"
+            :depth="0"
+            :selected-id="selectedElementId"
+            @select="handleSelect"
+            @toggle="handleToggle"
+            @create="handleCreateElement"
+          />
+        </div>
+      </template>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .story-tree {
