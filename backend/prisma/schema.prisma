@@ -27,6 +27,7 @@ model User {
   project_members  ProjectMember[]
   node_assignees   NodeAssignee[]
   node_changes     NodeHistory[]
+  story_history    StoryHistory[]
 
   @@map("users")
 }
@@ -45,10 +46,11 @@ model Project {
   updated_at  DateTime @updatedAt
 
   // Relations
-  owner   User            @relation("ProjectOwner", fields: [owner_id], references: [id], onDelete: Cascade)
-  members ProjectMember[]
-  nodes   Node[]
-  notes   ProjectNote[]
+  owner         User            @relation("ProjectOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  members       ProjectMember[]
+  nodes         Node[]
+  notes         ProjectNote[]
+  storyElements StoryElement[]
 
   @@map("projects")
 }
@@ -115,11 +117,12 @@ model Node {
   updated_at  DateTime   @updatedAt
 
   // Relations
-  project   Project        @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  parent    Node?          @relation("NodeHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
-  children  Node[]         @relation("NodeHierarchy")
-  assignees NodeAssignee[]
-  history   NodeHistory[]
+  project    Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent     Node?           @relation("NodeHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children   Node[]          @relation("NodeHierarchy")
+  assignees  NodeAssignee[]
+  history    NodeHistory[]
+  storyLinks NodeStoryLink[]
 
   @@index([project_id])
   @@index([parent_id])
@@ -153,4 +156,93 @@ model NodeHistory {
 
   @@index([node_id])
   @@map("node_history")
+}
+
+// ==========================================
+// PHASE 4: Story Module
+// ==========================================
+
+enum StoryElementType {
+  OVERVIEW   // Zarys ogólny świata/fabuły
+  ACT        // Akt (rozdział)
+  SCENE      // Scena
+  DIALOG     // Dialog
+  EVENT      // Event fabularny
+  CHARACTER  // Postać
+}
+
+enum StoryElementStatus {
+  DRAFT       // Szkic
+  IN_PROGRESS // W trakcie pisania
+  REVIEW      // Do przeglądu
+  COMPLETED   // Ukończone
+}
+
+model StoryElement {
+  id          String              @id @default(uuid()) @db.Uuid
+  project_id  String              @db.Uuid
+  parent_id   String?             @db.Uuid
+  type        StoryElementType
+  status      StoryElementStatus  @default(DRAFT)
+  title       String              @db.VarChar(255)
+  content     String?             @db.Text
+  order_index Int                 @default(0)
+  metadata    Json?
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+
+  // Relations
+  project     Project            @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent      StoryElement?      @relation("StoryHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children    StoryElement[]     @relation("StoryHierarchy")
+  connections StoryConnection[]  @relation("FromElement")
+  connectedBy StoryConnection[]  @relation("ToElement")
+  linkedNodes NodeStoryLink[]
+  history     StoryHistory[]
+
+  @@index([project_id])
+  @@index([parent_id])
+  @@map("story_elements")
+}
+
+model StoryConnection {
+  id              String       @id @default(uuid()) @db.Uuid
+  from_element_id String       @db.Uuid
+  to_element_id   String       @db.Uuid
+  label           String?      @db.VarChar(100)
+  connection_type String       @default("leads_to") @db.VarChar(50)
+
+  fromElement StoryElement @relation("FromElement", fields: [from_element_id], references: [id], onDelete: Cascade)
+  toElement   StoryElement @relation("ToElement", fields: [to_element_id], references: [id], onDelete: Cascade)
+
+  @@unique([from_element_id, to_element_id])
+  @@map("story_connections")
+}
+
+model NodeStoryLink {
+  id               String @id @default(uuid()) @db.Uuid
+  node_id          String @db.Uuid
+  story_element_id String @db.Uuid
+
+  node         Node         @relation(fields: [node_id], references: [id], onDelete: Cascade)
+  storyElement StoryElement @relation(fields: [story_element_id], references: [id], onDelete: Cascade)
+
+  @@unique([node_id, story_element_id])
+  @@map("node_story_links")
+}
+
+model StoryHistory {
+  id               String   @id @default(uuid()) @db.Uuid
+  story_element_id String   @db.Uuid
+  field_name       String   @db.VarChar(50)
+  old_value        String?  @db.Text
+  new_value        String?  @db.Text
+  changed_by       String   @db.Uuid
+  changed_at       DateTime @default(now())
+
+  storyElement StoryElement @relation(fields: [story_element_id], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [changed_by], references: [id], onDelete: Cascade)
+
+  @@index([story_element_id])
+  @@map("story_history")
 }
