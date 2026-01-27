@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto, UpdateProjectDto, TransferOwnershipDto, InviteMemberDto } from './dto';
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  TransferOwnershipDto,
+  InviteMemberDto,
+} from './dto';
 import { JwtAuthGuard, CurrentUser } from '../auth';
 
 @Controller('projects')
@@ -91,7 +96,11 @@ export class ProjectsController {
     @CurrentUser('id') userId: string,
     @Body() transferDto: TransferOwnershipDto,
   ) {
-    return this.projectsService.transferOwnership(projectId, userId, transferDto);
+    return this.projectsService.transferOwnership(
+      projectId,
+      userId,
+      transferDto,
+    );
   }
 
   // ==========================================
@@ -141,6 +150,10 @@ export class ProjectsController {
     @Param('userId', ParseUUIDPipe) memberIdToRemove: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.projectsService.removeMember(projectId, userId, memberIdToRemove);
+    return this.projectsService.removeMember(
+      projectId,
+      userId,
+      memberIdToRemove,
+    );
   }
 }

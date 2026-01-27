@@ -132,7 +132,9 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Nieprawidłowy lub wygasły refresh token');
+      throw new UnauthorizedException(
+        'Nieprawidłowy lub wygasły refresh token',
+      );
     }
   }
 
@@ -174,7 +176,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Użytkownik z tym adresem email już istnieje');
+      throw new ConflictException(
+        'Użytkownik z tym adresem email już istnieje',
+      );
     }
   }
 

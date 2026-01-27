@@ -5,7 +5,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { CreateNodeDto, UpdateNodeDto, MoveNodeDto, ReorderChildrenDto } from './dto';
+import {
+  CreateNodeDto,
+  UpdateNodeDto,
+  MoveNodeDto,
+  ReorderChildrenDto,
+} from './dto';
 import { NodeType } from '@prisma/client';
 
 @Injectable()
@@ -113,9 +118,9 @@ export class NodesService {
 
     // Oblicz order_index (następny w kolejności wśród rodzeństwa)
     const maxOrderIndex = await this.prisma.node.aggregate({
-      where: { 
+      where: {
         parent_id: dto.parentId || null,
-        project_id: dto.projectId
+        project_id: dto.projectId,
       },
       _max: { order_index: true },
     });
@@ -187,7 +192,10 @@ export class NodesService {
         });
       }
 
-      if (dto.description !== undefined && dto.description !== node.description) {
+      if (
+        dto.description !== undefined &&
+        dto.description !== node.description
+      ) {
         historyEntries.push({
           node_id: nodeId,
           field_name: 'description',
@@ -406,7 +414,11 @@ export class NodesService {
   /**
    * Zmienia kolejność dzieci węzła (sortowanie priorytetów)
    */
-  async reorderChildren(parentId: string, dto: ReorderChildrenDto, userId: string) {
+  async reorderChildren(
+    parentId: string,
+    dto: ReorderChildrenDto,
+    userId: string,
+  ) {
     const parentNode = await this.findOne(parentId, userId);
 
     // Pobierz aktualne dzieci
@@ -415,18 +427,22 @@ export class NodesService {
       select: { id: true },
     });
 
-    const currentChildrenIds = new Set(currentChildren.map(c => c.id));
+    const currentChildrenIds = new Set(currentChildren.map((c) => c.id));
 
     // Waliduj że wszystkie podane ID są dziećmi tego węzła
     for (const childId of dto.childrenIds) {
       if (!currentChildrenIds.has(childId)) {
-        throw new BadRequestException(`Node ${childId} is not a child of ${parentId}`);
+        throw new BadRequestException(
+          `Node ${childId} is not a child of ${parentId}`,
+        );
       }
     }
 
     // Waliduj że podano wszystkie dzieci
     if (dto.childrenIds.length !== currentChildren.length) {
-      throw new BadRequestException('Must provide all children IDs in new order');
+      throw new BadRequestException(
+        'Must provide all children IDs in new order',
+      );
     }
 
     // Aktualizuj order_index dla każdego dziecka
@@ -447,7 +463,7 @@ export class NodesService {
             },
           },
         },
-      })
+      }),
     );
 
     return this.prisma.$transaction(updates);
