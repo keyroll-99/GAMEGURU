@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
 import { ProjectsService } from '../projects.service';
@@ -39,7 +43,11 @@ export class NotesService {
     return note;
   }
 
-  async create(projectId: string, userId: string, createNoteDto: CreateNoteDto) {
+  async create(
+    projectId: string,
+    userId: string,
+    createNoteDto: CreateNoteDto,
+  ) {
     const isMember = await this.projectsService.isMember(projectId, userId);
     if (!isMember) {
       throw new ForbiddenException('Nie masz dostępu do tego projektu');

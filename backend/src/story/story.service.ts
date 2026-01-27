@@ -195,11 +195,7 @@ export class StoryService {
   /**
    * Aktualizuje element fabuły z zapisem do historii
    */
-  async update(
-    elementId: string,
-    dto: UpdateStoryElementDto,
-    userId: string,
-  ) {
+  async update(elementId: string, dto: UpdateStoryElementDto, userId: string) {
     const element = await this.findOne(elementId, userId);
 
     // Przygotuj wpisy do historii zmian
@@ -277,7 +273,7 @@ export class StoryService {
    * Usuwa element fabuły (cascade usuwa dzieci)
    */
   async remove(elementId: string, userId: string) {
-    const element = await this.findOne(elementId, userId);
+    await this.findOne(elementId, userId);
 
     await this.prisma.storyElement.delete({
       where: { id: elementId },
@@ -458,7 +454,7 @@ export class StoryService {
    * Pobiera historię zmian elementu
    */
   async getHistory(elementId: string, userId: string) {
-    const element = await this.findOne(elementId, userId);
+    await this.findOne(elementId, userId);
 
     return this.prisma.storyHistory.findMany({
       where: { story_element_id: elementId },
@@ -534,7 +530,8 @@ export class StoryService {
       },
       byType,
       completedByType,
-      completionPercentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+      completionPercentage:
+        total > 0 ? Math.round((completed / total) * 100) : 0,
     };
   }
 

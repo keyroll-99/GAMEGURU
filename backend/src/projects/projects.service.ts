@@ -8,7 +8,12 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { CreateProjectDto, UpdateProjectDto, TransferOwnershipDto, InviteMemberDto } from './dto';
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  TransferOwnershipDto,
+  InviteMemberDto,
+} from './dto';
 import { ProjectRole } from '@prisma/client';
 import { NodesService } from '../nodes';
 
@@ -159,9 +164,7 @@ export class ProjectsService {
     const project = await this.findOne(projectId, userId);
 
     if (project.owner_id !== userId) {
-      throw new ForbiddenException(
-        'Tylko właściciel może edytować projekt',
-      );
+      throw new ForbiddenException('Tylko właściciel może edytować projekt');
     }
 
     const updatedProject = await this.prisma.project.update({
@@ -223,9 +226,7 @@ export class ProjectsService {
     const project = await this.findOne(projectId, userId);
 
     if (project.owner_id !== userId) {
-      throw new ForbiddenException(
-        'Tylko właściciel może przekazać projekt',
-      );
+      throw new ForbiddenException('Tylko właściciel może przekazać projekt');
     }
 
     if (newOwnerId === userId) {
@@ -235,7 +236,9 @@ export class ProjectsService {
     }
 
     // Sprawdź czy nowy owner jest członkiem projektu
-    const newOwnerMember = project.members.find((m) => m.user_id === newOwnerId);
+    const newOwnerMember = project.members.find(
+      (m) => m.user_id === newOwnerId,
+    );
     if (!newOwnerMember) {
       throw new BadRequestException(
         'Nowy właściciel musi być członkiem projektu',
@@ -339,7 +342,11 @@ export class ProjectsService {
   /**
    * Zaprasza użytkownika do projektu po emailu
    */
-  async inviteMember(projectId: string, userId: string, inviteDto: InviteMemberDto) {
+  async inviteMember(
+    projectId: string,
+    userId: string,
+    inviteDto: InviteMemberDto,
+  ) {
     const { email } = inviteDto;
 
     const project = await this.findOne(projectId, userId);
@@ -361,7 +368,9 @@ export class ProjectsService {
     });
 
     if (!userToInvite) {
-      throw new NotFoundException('Użytkownik o podanym adresie email nie istnieje');
+      throw new NotFoundException(
+        'Użytkownik o podanym adresie email nie istnieje',
+      );
     }
 
     // Sprawdź czy użytkownik nie jest już członkiem
@@ -406,7 +415,11 @@ export class ProjectsService {
   /**
    * Usuwa członka z projektu (tylko owner)
    */
-  async removeMember(projectId: string, userId: string, memberIdToRemove: string) {
+  async removeMember(
+    projectId: string,
+    userId: string,
+    memberIdToRemove: string,
+  ) {
     const project = await this.findOne(projectId, userId);
 
     // Tylko owner może usuwać członków

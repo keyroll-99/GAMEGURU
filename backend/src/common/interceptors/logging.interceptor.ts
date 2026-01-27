@@ -23,17 +23,19 @@ export class LoggingInterceptor implements NestInterceptor {
     // For development, it's useful to see the body (maybe sanitize password)
     const sanitizedBody = { ...body };
     if (sanitizedBody.password) sanitizedBody.password = '***';
-    
-    this.logger.log(`Incoming Request: ${method} ${url} ${JSON.stringify(sanitizedBody)}`);
 
-    return next
-      .handle()
-      .pipe(
-        tap((data) => {
-             const response = ctx.getResponse();
-             const delay = Date.now() - now;
-             this.logger.log(`Response for ${method} ${url} - Status: ${response.statusCode} - ${delay}ms`);
-        }),
-      );
+    this.logger.log(
+      `Incoming Request: ${method} ${url} ${JSON.stringify(sanitizedBody)}`,
+    );
+
+    return next.handle().pipe(
+      tap((data) => {
+        const response = ctx.getResponse();
+        const delay = Date.now() - now;
+        this.logger.log(
+          `Response for ${method} ${url} - Status: ${response.statusCode} - ${delay}ms`,
+        );
+      }),
+    );
   }
 }

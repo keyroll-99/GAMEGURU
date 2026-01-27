@@ -46,15 +46,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error = 'Database Error';
       }
     } else if (exception instanceof Error) {
-       message = exception.message;
+      message = exception.message;
     }
 
     this.logger.error(
-      `${request.method} ${request.url} - Status: ${status} - Error: ${JSON.stringify(message)}`
+      `${request.method} ${request.url} - Status: ${status} - Error: ${JSON.stringify(message)}`,
     );
-     if (exception instanceof Error) {
-        this.logger.debug(exception.stack);
-     }
+    if (exception instanceof Error) {
+      this.logger.debug(exception.stack);
+    }
 
     response.status(status).json({
       statusCode: status,
