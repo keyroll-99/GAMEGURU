@@ -105,7 +105,8 @@ function handleCreateElement(parentId: string | null, type: StoryElementType) {
 }
 
 async function handleConfirmCreate() {
-  if (!createTitle.value.trim()) {
+  const trimmedTitle = createTitle.value.trim()
+  if (!trimmedTitle) {
     toast.error('Tytuł nie może być pusty')
     return
   }
@@ -115,7 +116,7 @@ async function handleConfirmCreate() {
       projectId: projectId.value,
       parentId: createParentId.value || undefined,
       type: createType.value,
-      title: createTitle.value,
+      title: trimmedTitle,
       content: '',
     })
 

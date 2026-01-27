@@ -15,9 +15,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   save: [data: UpdateStoryElementDto]
-  'save-immediate': []
   delete: []
-  'link-node': []
   'unlink-node': [nodeId: string]
 }>()
 
@@ -28,6 +26,7 @@ const editMetadata = ref<Record<string, any>>({})
 const activeTab = ref<'edit' | 'preview' | 'metadata' | 'history'>('edit')
 const isSaving = ref(false)
 const hasUnsavedChanges = ref(false)
+const isUpdatingFromProps = ref(false)
 
 const renderedMarkdown = computed(() => {
   return marked.parse(editContent.value || '')
@@ -53,6 +52,7 @@ const metadataJson = computed({
 
 // Watch for element changes
 watch(() => props.element, (newElement) => {
+  isUpdatingFromProps.value = true
   if (newElement) {
     editTitle.value = newElement.title
     editContent.value = newElement.content || ''
@@ -66,11 +66,15 @@ watch(() => props.element, (newElement) => {
     editMetadata.value = {}
     hasUnsavedChanges.value = false
   }
+  // Reset flag on next tick to allow auto-save to work again
+  setTimeout(() => {
+    isUpdatingFromProps.value = false
+  }, 0)
 }, { immediate: true })
 
 // Watch for changes to trigger auto-save
 watch([editTitle, editContent, editStatus, editMetadata], () => {
-  if (props.element && !isSaving.value) {
+  if (props.element && !isSaving.value && !isUpdatingFromProps.value) {
     const changed =
       editTitle.value !== props.element.title ||
       editContent.value !== (props.element.content || '') ||
@@ -120,7 +124,6 @@ const debouncedSave = useDebounceFn(() => {
 
 function handleSaveImmediate() {
   saveChanges(true)
-  emit('save-immediate')
 }
 
 function handleDelete() {
