@@ -10,6 +10,5 @@ export class CreateNoteDto {
 
   @ApiProperty({ example: '# Treść notatki w MD' })
   @IsString()
-  @IsNotEmpty()
   content: string;
 }
