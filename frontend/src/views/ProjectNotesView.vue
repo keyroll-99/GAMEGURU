@@ -97,7 +97,7 @@ watch(currentNote, (newNote) => {
 
 // Watch for changes in title and content to trigger debounced auto-save
 watch([editTitle, editContent], () => {
-  if (currentNote.value) {
+  if (currentNote.value && !isSaving.value) {
     if (editTitle.value !== currentNote.value.title || editContent.value !== currentNote.value.content) {
       hasUnsavedChanges.value = true
       debouncedSave()
