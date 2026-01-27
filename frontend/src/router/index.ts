@@ -38,9 +38,15 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/projects/:id/map',
-      name: 'project-map',
-      component: () => import('../views/MindMapView.vue'),
+      path: '/projects/:id/board',
+      name: 'project-board',
+      component: () => import('../views/ProjectBoardView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/projects/:id/notes',
+      name: 'project-notes',
+      component: () => import('../views/ProjectNotesView.vue'),
       meta: { requiresAuth: true },
     },
   ],

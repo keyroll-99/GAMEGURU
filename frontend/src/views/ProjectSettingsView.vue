@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import { useProjectsStore } from '@/stores/projects'
 import { useAuthStore } from '@/stores/auth'
 import type { ProjectMember } from '@/api/projects'
@@ -192,12 +193,14 @@ function goBack() {
 </script>
 
 <template>
-  <div class="project-settings">
-    <header class="settings-header">
-      <button class="back-btn" @click="goBack">← Powrót</button>
-      <h1>Ustawienia projektu</h1>
-    </header>
+  <div class="project-settings-container">
+    <ProjectHeader
+      :project-id="projectId"
+      :project-name="projectsStore.currentProject?.name"
+      :is-owner="isOwner"
+    />
 
+  <div class="project-settings">
     <!-- Messages -->
     <div v-if="successMessage" class="message success">{{ successMessage }}</div>
     <div v-if="errorMessage" class="message error">{{ errorMessage }}</div>
@@ -368,37 +371,24 @@ function goBack() {
       </section>
     </template>
   </div>
+</div>
 </template>
 
 <style scoped>
+.project-settings-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
 .project-settings {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
-}
-
-.settings-header {
-  margin-bottom: 2rem;
-}
-
-.back-btn {
-  background: none;
-  border: none;
-  color: var(--color-text);
-  opacity: 0.7;
-  cursor: pointer;
-  font-size: 0.95rem;
-  padding: 0;
-  margin-bottom: 1rem;
-}
-
-.back-btn:hover {
-  opacity: 1;
-}
-
-.settings-header h1 {
-  font-size: 1.75rem;
-  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
 }
 
 .message {

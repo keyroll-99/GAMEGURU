@@ -1,15 +1,11 @@
 <template>
   <div class="mind-map-view">
-      <!-- Header -->
-      <header class="mind-map-view__header">
-        <div class="mind-map-view__header-left">
-          <router-link :to="{ name: 'dashboard' }" class="mind-map-view__back">
-            ← Powrót
-          </router-link>
-          <h1 v-if="rootNode">{{ rootNode.title }}</h1>
-          <h1 v-else>Mapa myśli</h1>
-        </div>
-        <div class="mind-map-view__header-actions">
+      <ProjectHeader
+        :project-id="projectId"
+        :project-name="currentProject?.name"
+        :is-owner="isOwner"
+      >
+        <template #actions>
           <button class="btn btn--secondary" @click="handleExpandAll">
             Rozwiń wszystko
           </button>
@@ -19,16 +15,8 @@
           <button class="btn btn--primary" @click="handleAddNode">
             + Dodaj węzeł
           </button>
-          <router-link 
-            v-if="isOwner" 
-            :to="{ name: 'project-settings', params: { id: projectId } }" 
-            class="btn btn--icon"
-            title="Ustawienia projektu"
-          >
-            ⚙️
-          </router-link>
-        </div>
-      </header>
+        </template>
+      </ProjectHeader>
 
       <!-- Loading -->
       <div v-if="isLoading" class="mind-map-view__loading">
@@ -249,6 +237,7 @@ import { useRoute } from 'vue-router'
 import { onKeyStroke } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import { MindMapFlow } from '@/components/mindmap'
 import { useNodesStore } from '@/stores/nodes'
 import { useAuthStore } from '@/stores/auth'
@@ -560,44 +549,7 @@ const openChildrenPanel = () => {
 .mind-map-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-}
-
-.mind-map-view__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
-  flex-shrink: 0;
-}
-
-.mind-map-view__header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.mind-map-view__back {
-  color: #64748b;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.mind-map-view__back:hover {
-  color: #334155;
-}
-
-.mind-map-view__header h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.mind-map-view__header-actions {
-  display: flex;
-  gap: 8px;
+  height: calc(100vh - 64px); /* Subtract MainLayout header height */
 }
 
 .mind-map-view__content {
