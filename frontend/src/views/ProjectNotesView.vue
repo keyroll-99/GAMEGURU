@@ -45,6 +45,44 @@ onMounted(async () => {
   await notesStore.fetchNotes(id)
 })
 
+async function saveNote(showSuccessToast: boolean = false) {
+  if (!currentNote.value) return
+  if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) {
+    hasUnsavedChanges.value = false
+    return
+  }
+
+  isSaving.value = true
+  try {
+    const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
+      title: editTitle.value,
+      content: editContent.value
+    })
+    
+    if (result.success) {
+      hasUnsavedChanges.value = false
+      if (showSuccessToast) {
+        toast.success('Notatka zapisana')
+      }
+    } else {
+      toast.error(result.message || 'Błąd zapisu')
+    }
+  } catch (error) {
+    toast.error('Błąd zapisu')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function saveCurrentNote() {
+  await saveNote(true)
+}
+
+// Debounced version of save for auto-save
+const debouncedSave = useDebounceFn(async () => {
+  await saveNote(false)
+}, 1000) // 1 second debounce
+
 watch(currentNote, (newNote) => {
   if (newNote) {
     editTitle.value = newNote.title
@@ -84,44 +122,6 @@ async function handleCreateNote() {
     toast.error(result.message || 'Błąd tworzenia notatki')
   }
 }
-
-async function saveNote(showSuccessToast: boolean = false) {
-  if (!currentNote.value) return
-  if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) {
-    hasUnsavedChanges.value = false
-    return
-  }
-
-  isSaving.value = true
-  try {
-    const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
-      title: editTitle.value,
-      content: editContent.value
-    })
-    
-    if (result.success) {
-      hasUnsavedChanges.value = false
-      if (showSuccessToast) {
-        toast.success('Notatka zapisana')
-      }
-    } else {
-      toast.error(result.message || 'Błąd zapisu')
-    }
-  } catch (error) {
-    toast.error('Błąd zapisu')
-  } finally {
-    isSaving.value = false
-  }
-}
-
-async function saveCurrentNote() {
-  await saveNote(true)
-}
-
-// Debounced version of save for auto-save
-const debouncedSave = useDebounceFn(async () => {
-  await saveNote(false)
-}, 1000) // 1 second debounce
 
 async function handleDeleteNote() {
   if (!currentNote.value) return
