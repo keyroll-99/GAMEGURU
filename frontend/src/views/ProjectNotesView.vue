@@ -85,7 +85,7 @@ async function handleCreateNote() {
   }
 }
 
-async function saveCurrentNote() {
+async function saveNote(showSuccessToast: boolean = false) {
   if (!currentNote.value) return
   if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) {
     hasUnsavedChanges.value = false
@@ -93,41 +93,34 @@ async function saveCurrentNote() {
   }
 
   isSaving.value = true
-  const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
-    title: editTitle.value,
-    content: editContent.value
-  })
-  isSaving.value = false
-  
-  if (result.success) {
-    hasUnsavedChanges.value = false
-    toast.success('Notatka zapisana')
-  } else {
-    toast.error(result.message || 'Błąd zapisu')
+  try {
+    const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
+      title: editTitle.value,
+      content: editContent.value
+    })
+    
+    if (result.success) {
+      hasUnsavedChanges.value = false
+      if (showSuccessToast) {
+        toast.success('Notatka zapisana')
+      }
+    } else {
+      toast.error(result.message || 'Błąd zapisu')
+    }
+  } catch (error) {
+    toast.error('Błąd zapisu')
+  } finally {
+    isSaving.value = false
   }
+}
+
+async function saveCurrentNote() {
+  await saveNote(true)
 }
 
 // Debounced version of save for auto-save
 const debouncedSave = useDebounceFn(async () => {
-  if (!currentNote.value) return
-  if (editTitle.value === currentNote.value.title && editContent.value === currentNote.value.content) {
-    hasUnsavedChanges.value = false
-    return
-  }
-
-  isSaving.value = true
-  const result = await notesStore.updateNote(projectId.value, currentNote.value.id, {
-    title: editTitle.value,
-    content: editContent.value
-  })
-  isSaving.value = false
-  
-  if (result.success) {
-    hasUnsavedChanges.value = false
-    // Silent success for auto-save, no toast
-  } else {
-    toast.error(result.message || 'Błąd zapisu')
-  }
+  await saveNote(false)
 }, 1000) // 1 second debounce
 
 async function handleDeleteNote() {
