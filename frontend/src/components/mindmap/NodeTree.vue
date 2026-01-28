@@ -1,17 +1,26 @@
 <template>
   <div 
     class="node-tree"
-    :class="{ 'node-tree--drag-over': isDragOver && canDrop }"
+    :class="{ 
+      'node-tree--drag-over': isDragOver && canDrop,
+      'node-tree--drag-over-valid': isDragOver && canDrop && isValidDrop,
+      'node-tree--drag-over-invalid': isDragOver && canDrop && !isValidDrop
+    }"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
     @drop.prevent="handleDrop"
   >
-    <!-- Drop zone indicator (T-104) -->
+    <!-- Drop zone indicator (T-104 + Phase 2.1 enhanced) -->
     <div 
       v-if="isDragOver && canDrop" 
       class="node-tree__drop-indicator"
+      :class="{
+        'node-tree__drop-indicator--valid': isValidDrop,
+        'node-tree__drop-indicator--invalid': !isValidDrop
+      }"
     >
-      Upuść tutaj
+      <span v-if="isValidDrop">✓ Upuść tutaj</span>
+      <span v-else>✗ Nie można tutaj upuścić</span>
     </div>
 
     <!-- Node card z expand/collapse button -->
@@ -96,8 +105,20 @@ const canDrop = computed(() => {
   const draggedId = window.__draggedNodeId
   if (!draggedId) return false
   if (draggedId === props.node.id) return false
-  // Nie można upuścić na swoje potomki - sprawdzane w backendzie
   return true
+})
+
+// Check if this is a valid drop (Phase 2.1)
+const isValidDrop = computed(() => {
+  const draggedId = window.__draggedNodeId
+  const draggedParentId = window.__draggedNodeParentId
+  if (!draggedId || !canDrop.value) return false
+  
+  // Valid if moving to a different parent
+  if (props.node.id !== draggedParentId) return true
+  
+  // Invalid if dropping on same parent
+  return false
 })
 
 const handleSelect = (nodeId: string) => {
@@ -184,21 +205,42 @@ const handleChildContextMenu = (payload: { event: MouseEvent, nodeId: string }) 
 .node-tree--drag-over {
   background: rgba(59, 130, 246, 0.1);
   border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.node-tree--drag-over-valid {
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+
+.node-tree--drag-over-invalid {
+  background: rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
 }
 
 .node-tree__drop-indicator {
   position: absolute;
   top: -10px; /* Above the node */
   left: 0;
-  min-width: 100px;
-  padding: 2px 8px;
-  background: #3b82f6;
-  color: white;
-  font-size: 10px;
-  font-weight: 500;
-  border-radius: 4px;
+  min-width: 120px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
   z-index: 20;
   text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.node-tree__drop-indicator--valid {
+  background: #22c55e;
+  color: white;
+}
+
+.node-tree__drop-indicator--invalid {
+  background: #ef4444;
+  color: white;
 }
 
 .node-tree__node {
@@ -213,6 +255,9 @@ const handleChildContextMenu = (payload: { event: MouseEvent, nodeId: string }) 
 
 .node-tree__node--dragging {
   opacity: 0.5;
+  cursor: grabbing;
+  transform: scale(0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .node-tree__node[draggable="true"] {
