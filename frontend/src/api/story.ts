@@ -192,6 +192,14 @@ export const storyApi = {
     const response = await apiClient.get(`/story/${elementId}/history`)
     return response.data
   },
+
+  /**
+   * Przywraca wartość pola na podstawie wpisu historii
+   */
+  rollback: async (elementId: string, historyId: string): Promise<StoryElement> => {
+    const response = await apiClient.post(`/story/${elementId}/rollback`, { historyId })
+    return response.data
+  },
 }
 
 export default storyApi

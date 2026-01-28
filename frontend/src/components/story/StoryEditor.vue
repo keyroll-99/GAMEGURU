@@ -4,6 +4,7 @@ import { marked } from 'marked'
 import { useDebounceFn } from '@vueuse/core'
 import type { StoryElement, StoryElementStatus, UpdateStoryElementDto } from '@/api/story'
 import type { StoryHistoryEntry } from '@/api/story'
+import StoryHistory from './StoryHistory.vue'
 
 interface Props {
   element: StoryElement | null
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   delete: []
   'unlink-node': [nodeId: string]
   'link-task': []
+  rollback: [historyId: string]
 }>()
 
 const editTitle = ref('')
@@ -26,8 +28,10 @@ const editStatus = ref<StoryElementStatus>('DRAFT')
 const editMetadata = ref<Record<string, any>>({})
 const activeTab = ref<'edit' | 'preview' | 'metadata' | 'history'>('edit')
 const isSaving = ref(false)
+const saveError = ref<string | null>(null)
 const hasUnsavedChanges = ref(false)
 const isUpdatingFromProps = ref(false)
+const lastSaveTime = ref<Date | null>(null)
 
 const renderedMarkdown = computed(() => {
   return marked.parse(editContent.value || '')
@@ -39,6 +43,27 @@ const statusOptions: Array<{ value: StoryElementStatus; label: string }> = [
   { value: 'REVIEW', label: 'Do przeglądu' },
   { value: 'COMPLETED', label: 'Ukończone' },
 ]
+
+const saveStatusText = computed(() => {
+  if (isSaving.value) return 'Zapisywanie...'
+  if (saveError.value) return 'Błąd zapisu'
+  if (hasUnsavedChanges.value) return 'Niezapisane zmiany'
+  if (lastSaveTime.value) {
+    const now = new Date()
+    const diff = Math.floor((now.getTime() - lastSaveTime.value.getTime()) / 1000)
+    if (diff < 5) return '✓ Zapisano'
+    if (diff < 60) return `✓ Zapisano ${diff}s temu`
+    return '✓ Zapisano'
+  }
+  return '✓ Zapisano'
+})
+
+const saveStatusClass = computed(() => {
+  if (isSaving.value) return 'status--saving'
+  if (saveError.value) return 'status--error'
+  if (hasUnsavedChanges.value) return 'status--unsaved'
+  return 'status--saved'
+})
 
 const metadataJson = computed({
   get: () => JSON.stringify(editMetadata.value, null, 2),
@@ -60,12 +85,14 @@ watch(() => props.element, (newElement) => {
     editStatus.value = newElement.status
     editMetadata.value = newElement.metadata || {}
     hasUnsavedChanges.value = false
+    saveError.value = null
   } else {
     editTitle.value = ''
     editContent.value = ''
     editStatus.value = 'DRAFT'
     editMetadata.value = {}
     hasUnsavedChanges.value = false
+    saveError.value = null
   }
   // Reset flag on next tick to allow auto-save to work again
   setTimeout(() => {
@@ -109,18 +136,22 @@ function saveChanges(immediate = false) {
 
   if (Object.keys(data).length > 0) {
     isSaving.value = true
+    saveError.value = null
     emit('save', data)
     hasUnsavedChanges.value = false
     
     // Reset saving state after a short delay
     setTimeout(() => {
       isSaving.value = false
+      lastSaveTime.value = new Date()
     }, 500)
   }
 }
 
 const debouncedSave = useDebounceFn(() => {
-  saveChanges(false)
+  if (!isSaving.value) {
+    saveChanges(false)
+  }
 }, 1000)
 
 function handleSaveImmediate() {
@@ -134,9 +165,8 @@ function handleDelete() {
   }
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr)
-  return date.toLocaleString()
+function handleRollback(historyId: string) {
+  emit('rollback', historyId)
 }
 
 function getStatusLabel(status: string) {
@@ -159,6 +189,9 @@ function getStatusLabel(status: string) {
         placeholder="Tytuł elementu fabuły..."
       />
       <div class="story-editor__actions">
+        <div class="save-status" :class="saveStatusClass">
+          {{ saveStatusText }}
+        </div>
         <select v-model="editStatus" class="status-select">
           <option
             v-for="option in statusOptions"
@@ -168,15 +201,6 @@ function getStatusLabel(status: string) {
             {{ option.label }}
           </option>
         </select>
-        <button
-          class="btn btn--success"
-          :disabled="isSaving || !hasUnsavedChanges"
-          @click="handleSaveImmediate"
-        >
-          <span v-if="isSaving">Zapisywanie...</span>
-          <span v-else-if="hasUnsavedChanges">💾 Zapisz</span>
-          <span v-else>✓ Zapisano</span>
-        </button>
         <button class="btn btn--danger-outline" @click="handleDelete">
           Usuń
         </button>
@@ -244,31 +268,10 @@ function getStatusLabel(status: string) {
 
       <!-- History Tab -->
       <div v-else-if="activeTab === 'history'" class="history-view">
-        <template v-if="history && history.length > 0">
-          <div
-            v-for="entry in history"
-            :key="entry.id"
-            class="history-entry"
-          >
-            <div class="history-entry__header">
-              <span class="history-entry__user">
-                {{ entry.user.username }}
-              </span>
-              <span class="history-entry__date">
-                {{ formatDate(entry.changed_at) }}
-              </span>
-            </div>
-            <div class="history-entry__change">
-              <strong>{{ entry.field_name }}</strong>:
-              <span class="history-entry__old">{{ entry.old_value || '(pusty)' }}</span>
-              →
-              <span class="history-entry__new">{{ entry.new_value || '(pusty)' }}</span>
-            </div>
-          </div>
-        </template>
-        <div v-else class="empty-history">
-          Brak historii zmian
-        </div>
+        <StoryHistory
+          :history="history || []"
+          @rollback="handleRollback"
+        />
       </div>
     </div>
 
@@ -352,6 +355,35 @@ function getStatusLabel(status: string) {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: center;
+}
+
+.save-status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.save-status.status--saved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.save-status.status--saving {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.save-status.status--unsaved {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.save-status.status--error {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .status-select {
@@ -505,51 +537,7 @@ function getStatusLabel(status: string) {
 .history-view {
   flex: 1;
   overflow-y: auto;
-}
-
-.history-entry {
   padding: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  margin-bottom: 12px;
-}
-
-.history-entry__header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.history-entry__user {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.history-entry__date {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.history-entry__change {
-  font-size: 13px;
-  color: #475569;
-}
-
-.history-entry__old {
-  color: #ef4444;
-  text-decoration: line-through;
-}
-
-.history-entry__new {
-  color: #10b981;
-  font-weight: 500;
-}
-
-.empty-history {
-  padding: 40px;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 14px;
 }
 
 .linked-nodes {
