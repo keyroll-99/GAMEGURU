@@ -237,6 +237,20 @@ export class StoryService {
       });
     }
 
+    if (dto.metadata !== undefined) {
+      const oldMetadata = JSON.stringify(element.metadata);
+      const newMetadata = JSON.stringify(dto.metadata);
+      if (oldMetadata !== newMetadata) {
+        historyEntries.push({
+          story_element_id: elementId,
+          field_name: 'metadata',
+          old_value: element.metadata ? JSON.stringify(element.metadata) : null,
+          new_value: dto.metadata ? JSON.stringify(dto.metadata) : null,
+          changed_by: userId,
+        });
+      }
+    }
+
     // Zapisz historię i zaktualizuj element w transakcji
     return this.prisma.$transaction(async (tx) => {
       if (historyEntries.length > 0) {
@@ -470,6 +484,121 @@ export class StoryService {
         },
       },
       orderBy: { changed_at: 'desc' },
+    });
+  }
+
+  /**
+   * Przywraca wartość pola na podstawie wpisu historii
+   */
+  async rollback(elementId: string, historyId: string, userId: string) {
+    const element = await this.findOne(elementId, userId);
+
+    // Pobierz wpis historii
+    const historyEntry = await this.prisma.storyHistory.findUnique({
+      where: { id: historyId },
+    });
+
+    if (!historyEntry) {
+      throw new NotFoundException('History entry not found');
+    }
+
+    // Sprawdź czy wpis należy do tego elementu
+    if (historyEntry.story_element_id !== elementId) {
+      throw new BadRequestException(
+        'History entry does not belong to this element',
+      );
+    }
+
+    const fieldName = historyEntry.field_name;
+    const oldValue = historyEntry.old_value;
+
+    // Przygotuj dane do rollbacku
+    const updateData: any = {};
+    let rollbackValue: any = null;
+
+    if (fieldName === 'title') {
+      rollbackValue = oldValue;
+      updateData.title = oldValue;
+    } else if (fieldName === 'content') {
+      rollbackValue = oldValue;
+      updateData.content = oldValue;
+    } else if (fieldName === 'status') {
+      // Walidacja enuma StoryElementStatus
+      if (
+        oldValue &&
+        !Object.values(StoryElementStatus).includes(
+          oldValue as StoryElementStatus,
+        )
+      ) {
+        throw new BadRequestException('Invalid status value in history');
+      }
+      rollbackValue = oldValue;
+      updateData.status = oldValue;
+    } else if (fieldName === 'metadata') {
+      if (oldValue) {
+        try {
+          rollbackValue = JSON.parse(oldValue);
+          updateData.metadata = rollbackValue;
+        } catch (e) {
+          throw new BadRequestException('Invalid metadata JSON in history');
+        }
+      } else {
+        rollbackValue = null;
+        updateData.metadata = null;
+      }
+    } else {
+      throw new BadRequestException(`Cannot rollback field: ${fieldName}`);
+    }
+
+    // Pobierz aktualną wartość pola
+    const currentValue =
+      fieldName === 'metadata'
+        ? element.metadata
+          ? JSON.stringify(element.metadata)
+          : null
+        : (element as any)[fieldName];
+
+    // Wykonaj rollback i zapisz nowy wpis historii w transakcji
+    return this.prisma.$transaction(async (tx) => {
+      // Utwórz nowy wpis historii opisujący rollback
+      await tx.storyHistory.create({
+        data: {
+          story_element_id: elementId,
+          field_name: fieldName,
+          old_value:
+            fieldName === 'metadata'
+              ? currentValue
+              : currentValue !== null && currentValue !== undefined
+                ? String(currentValue)
+                : null,
+          new_value:
+            fieldName === 'metadata'
+              ? oldValue
+              : oldValue !== null && oldValue !== undefined
+                ? String(oldValue)
+                : null,
+          changed_by: userId,
+        },
+      });
+
+      // Zaktualizuj element
+      return tx.storyElement.update({
+        where: { id: elementId },
+        data: updateData,
+        include: {
+          linkedNodes: {
+            include: {
+              node: {
+                select: {
+                  id: true,
+                  title: true,
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+      });
     });
   }
 
