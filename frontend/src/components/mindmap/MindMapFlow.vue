@@ -91,7 +91,7 @@ const saveViewportState = () => {
   }
   
   viewportChangeTimeout = setTimeout(() => {
-    const viewport = getViewport.value
+    const viewport = getViewport()
     nodesStore.setZoom(viewport.zoom)
     nodesStore.setPan({ x: viewport.x, y: viewport.y })
   }, 1000) // Debounce for 1 second

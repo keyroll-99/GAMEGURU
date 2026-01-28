@@ -182,7 +182,7 @@ export const useNodesStore = defineStore('nodes', () => {
     if (nodeIndex !== -1) {
       const node = nodes.value[nodeIndex]
       if (node) {
-        node.parent_id = dto.newParentId
+        node.parent_id = dto.newParentId ?? null
         node.order_index = dto.newOrderIndex
       }
     }
