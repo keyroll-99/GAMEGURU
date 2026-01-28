@@ -7,6 +7,10 @@
       'mindmap-node--in-progress': data.status === 'IN_PROGRESS',
       'mindmap-node--root': data.type === 'ROOT',
       'mindmap-node--milestone': data.type === 'MILESTONE',
+      'mindmap-node--dragging': isDragging,
+      'mindmap-node--drop-target': isDropTarget,
+      'mindmap-node--drop-target-valid': isDropTarget && isValidDrop,
+      'mindmap-node--drop-target-invalid': isDropTarget && !isValidDrop,
     }"
   >
     <!-- Expand/Collapse button -->
@@ -91,6 +95,9 @@ interface NodeData {
 const props = defineProps<{
   data: NodeData
   selected: boolean
+  isDragging?: boolean
+  isDropTarget?: boolean
+  isValidDrop?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -315,5 +322,31 @@ function handleToggle() {
 
 .mindmap-node--root :deep(.vue-flow__handle-left) {
   display: none;
+}
+
+/* Drag & Drop visual feedback (Phase 2.1) */
+.mindmap-node--dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mindmap-node--drop-target {
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+}
+
+.mindmap-node--drop-target-valid {
+  border-color: #22c55e !important;
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.mindmap-node--drop-target-invalid {
+  border-color: #ef4444 !important;
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(239, 68, 68, 0.05);
 }
 </style>

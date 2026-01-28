@@ -34,37 +34,41 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
 
 ## 📋 Faza 2: Ulepszenie Drag & Drop
 
-### Do zrobienia:
+### Zaimplementowano:
 
 #### 2.1 Wizualna informacja zwrotna
-- [ ] **Podświetlanie celów upuszczenia**
-  - Węzeł nad którym przeciągamy powinien się podświetlić
-  - Pokazać czy można tam upuścić (zielony = można, czerwony = nie można)
+- [x] **Podświetlanie celów upuszczenia**
+  - Węzeł nad którym przeciągamy się podświetla
+  - Zielony = można upuścić, czerwony = nie można (circular reference, same parent)
   
-- [ ] **Widmo przeciąganego elementu**
-  - Półprzezroczysty podgląd podczas przeciągania
-  - Kursor powinien wskazywać akcję (chwytanie)
+- [x] **Widmo przeciąganego elementu**
+  - Półprzezroczysty podgląd podczas przeciągania (opacity 0.5)
+  - Kursor wskazuje akcję (grabbing)
 
-- [ ] **Podgląd nowej relacji**
+- [ ] **Podgląd nowej relacji** _(opcjonalne, nie zaimplementowano)_
   - Tymczasowa linia pokazująca do którego rodzica zostanie przeniesiony węzeł
 
 #### 2.2 Lepsza detekcja upuszczenia
-- [ ] **Większe strefy upuszczenia**
-  - Zwiększyć próg z 100px do 150px
+- [x] **Większe strefy upuszczenia**
+  - Zwiększono próg z 100px do 150px
   - Łatwiej trafić w cel
   
-- [ ] **Dedykowane strefy między węzłami**
+- [ ] **Dedykowane strefy między węzłami** _(wymaga większych zmian UI, nie zaimplementowano)_
   - Możliwość upuszczenia między węzłami (zmiana kolejności)
   - Wizualne wskaźniki gdzie może wylądować
 
 #### 2.3 Optymalizacja wydajności
-- [ ] **Cache'owanie obliczeń layoutu**
+- [x] **Throttling obliczeń**
+  - RequestAnimationFrame throttling (~60fps)
+  - Anulowanie poprzednich requestów przed kolejnymi
+  
+- [ ] **Cache'owanie obliczeń layoutu** _(nie wymagane dla obecnej wielkości drzew)_
   - Nie przeliczać całego drzewa za każdym razem
   - Tylko dotknięte gałęzie
   
-- [ ] **Płynniejsze animacje**
-  - Dodać transitions CSS
-  - Smooth return po nieudanym przeciągnięciu
+- [x] **Płynniejsze animacje**
+  - Dodano transitions CSS
+  - Smooth scale i color transitions dla drop targets
 
 ---
 
