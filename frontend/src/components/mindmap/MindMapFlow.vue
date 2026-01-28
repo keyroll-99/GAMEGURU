@@ -13,6 +13,7 @@
       :auto-connect="false"
       @node-click="handleNodeClick"
       @node-drag-start="handleNodeDragStart"
+      @node-drag="handleNodeDrag"
       @node-drag-stop="handleNodeDragStop"
       @pane-click="handlePaneClick"
       @node-context-menu="handleNodeContextMenu"
@@ -27,6 +28,9 @@
         <MindMapNode
           :data="nodeProps.data"
           :selected="nodeProps.selected"
+          :is-dragging="draggedNodeId === nodeProps.id"
+          :is-drop-target="dropTargetNodeId === nodeProps.id"
+          :is-valid-drop="isValidDropTarget"
           @toggle-expand="handleToggleExpand"
         />
       </template>
@@ -82,6 +86,12 @@ const nodesStore = useNodesStore()
 // Flow state
 const nodes = ref<FlowNode[]>([])
 const edges = ref<Edge[]>([])
+
+// Drag & Drop visual feedback state (Phase 2.1)
+const isDragging = ref(false)
+const draggedNodeId = ref<string | null>(null)
+const dropTargetNodeId = ref<string | null>(null)
+const isValidDropTarget = ref(false)
 
 // Watch viewport changes to save state
 let viewportChangeTimeout: ReturnType<typeof setTimeout> | null = null
@@ -220,11 +230,45 @@ function handleNodeDragStart(event: { node: FlowNode }) {
     x: event.node.position.x, 
     y: event.node.position.y 
   })
+  
+  // Set drag state for visual feedback (Phase 2.1)
+  isDragging.value = true
+  draggedNodeId.value = event.node.id
+}
+
+function handleNodeDrag(event: { node: FlowNode }) {
+  // Update drop target during drag for visual feedback (Phase 2.1)
+  if (!isDragging.value) return
+  
+  const draggedNode = event.node
+  const allFlowNodes = getNodes.value
+  const targetNode = findDropTarget(draggedNode, allFlowNodes)
+  
+  if (targetNode && targetNode.id !== draggedNode.id) {
+    dropTargetNodeId.value = targetNode.id
+    
+    // Check if this is a valid drop target
+    const currentParentId = props.allNodes.find(n => n.id === draggedNode.id)?.parent_id
+    const isNewParent = targetNode.id !== currentParentId
+    const notDescendant = !isDescendant(draggedNode.id, targetNode.id)
+    const notRoot = (draggedNode.data as TreeNode).type !== 'ROOT'
+    
+    isValidDropTarget.value = isNewParent && notDescendant && notRoot
+  } else {
+    dropTargetNodeId.value = null
+    isValidDropTarget.value = false
+  }
 }
 
 function handleNodeDragStop(event: { node: FlowNode }) {
   const draggedNode = event.node
   const draggedNodeData = draggedNode.data as TreeNode
+  
+  // Reset drag state (Phase 2.1)
+  isDragging.value = false
+  draggedNodeId.value = null
+  dropTargetNodeId.value = null
+  isValidDropTarget.value = false
   
   // Nie pozwalaj na przenoszenie węzła ROOT
   if (draggedNodeData.type === 'ROOT') {
@@ -273,7 +317,7 @@ function resetNodePosition(nodeId: string) {
 
 function findDropTarget(draggedNode: FlowNode, allFlowNodes: FlowNode[]): FlowNode | null {
   const draggedPos = draggedNode.position
-  const THRESHOLD = 100 // Odległość w pikselach do uznania za upuszczenie na węzeł
+  const THRESHOLD = 150 // Zwiększony próg z 100px do 150px dla łatwiejszego upuszczania (Phase 2.2)
   
   let closestNode: FlowNode | null = null
   let closestDistance = Infinity
