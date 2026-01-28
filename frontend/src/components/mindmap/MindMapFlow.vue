@@ -6,7 +6,7 @@
       :default-viewport="{ x: 50, y: 50, zoom: 1 }"
       :min-zoom="0.25"
       :max-zoom="2"
-      :fit-view-on-init="true"
+      :fit-view-on-init="false"
       :nodes-draggable="true"
       :nodes-connectable="false"
       :edges-updatable="false"
@@ -16,6 +16,7 @@
       @node-drag-stop="handleNodeDragStop"
       @pane-click="handlePaneClick"
       @node-context-menu="handleNodeContextMenu"
+      @viewport-change="saveViewportState"
     >
       <Background pattern-color="#e2e8f0" :gap="20" />
       <Controls position="top-right" />
@@ -46,16 +47,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import type { Node as FlowNode, Edge } from '@vue-flow/core'
+import type { Node as FlowNode, Edge, ViewportTransform } from '@vue-flow/core'
 import MindMapNode from './MindMapNode.vue'
 import ChildrenPanel from './ChildrenPanel.vue'
 import type { TreeNode } from '@/stores/nodes'
 import type { Node } from '@/api/nodes'
+import { useNodesStore } from '@/stores/nodes'
 
 const props = defineProps<{
   nodesTree: TreeNode | null
@@ -72,12 +74,28 @@ const emit = defineEmits<{
   'change-parent': [nodeId: string, newParentId: string]
 }>()
 
-const { fitView, getNodes } = useVueFlow()
+const { fitView, getNodes, setViewport, getViewport } = useVueFlow()
+
+// Get nodes store for state persistence
+const nodesStore = useNodesStore()
 
 // Flow state
 const nodes = ref<FlowNode[]>([])
 const edges = ref<Edge[]>([])
 
+// Watch viewport changes to save state
+let viewportChangeTimeout: ReturnType<typeof setTimeout> | null = null
+const saveViewportState = () => {
+  if (viewportChangeTimeout) {
+    clearTimeout(viewportChangeTimeout)
+  }
+  
+  viewportChangeTimeout = setTimeout(() => {
+    const viewport = getViewport()
+    nodesStore.setZoom(viewport.zoom)
+    nodesStore.setPan({ x: viewport.x, y: viewport.y })
+  }, 1000) // Debounce for 1 second
+}
 // Children panel state
 const showChildrenPanel = ref(false)
 const selectedParentForReorder = ref<string | null>(null)
@@ -226,12 +244,14 @@ function handleNodeDragStop(event: { node: FlowNode }) {
     if (targetNode.id !== currentParentId) {
       // Sprawdź czy nie próbujemy przenieść węzła do jego własnego potomka
       if (!isDescendant(draggedNode.id, targetNode.id)) {
+        // Emit change parent event - no longer reset position immediately
         emit('change-parent', draggedNode.id, targetNode.id)
+        return // Don't reset position - let the parent handle it
       }
     }
   }
   
-  // Zawsze resetujemy pozycję - layout jest kontrolowany przez drzewo
+  // Only reset if no valid drop target
   resetNodePosition(draggedNode.id)
 }
 
@@ -317,8 +337,20 @@ defineExpose({
 
 onMounted(() => {
   nextTick(() => {
-    fitView({ padding: 0.2 })
+    // Restore saved viewport state
+    setViewport({
+      x: nodesStore.pan.x,
+      y: nodesStore.pan.y,
+      zoom: nodesStore.zoom,
+    })
   })
+})
+
+onUnmounted(() => {
+  // Clear timeout on unmount
+  if (viewportChangeTimeout) {
+    clearTimeout(viewportChangeTimeout)
+  }
 })
 </script>
 

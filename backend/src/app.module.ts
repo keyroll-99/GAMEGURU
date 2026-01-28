@@ -11,6 +11,7 @@ import { ProjectsModule } from './projects';
 import { NotesModule } from './projects/notes';
 import { NodesModule } from './nodes';
 import { StoryModule } from './story';
+import { ViewStateModule } from './view-state';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { StoryModule } from './story';
     NotesModule,
     NodesModule,
     StoryModule,
+    ViewStateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
