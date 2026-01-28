@@ -102,6 +102,9 @@ async function handleRollback(historyId: string) {
     await storyStore.rollback(element.id, historyId)
     toast.success('Przywrócono wersję')
     
+    // Odśwież historię po rollbacku
+    elementHistory.value = await storyStore.fetchHistory(element.id)
+    
     // Odśwież postęp jeśli to była scena
     if (element.type === 'SCENE') {
       await storyStore.fetchProgress(projectId.value)

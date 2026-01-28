@@ -244,8 +244,8 @@ export class StoryService {
         historyEntries.push({
           story_element_id: elementId,
           field_name: 'metadata',
-          old_value: element.metadata ? JSON.stringify(element.metadata) : null,
-          new_value: dto.metadata ? JSON.stringify(dto.metadata) : null,
+          old_value: oldMetadata === 'null' ? null : oldMetadata,
+          new_value: newMetadata === 'null' ? null : newMetadata,
           changed_by: userId,
         });
       }
@@ -514,13 +514,10 @@ export class StoryService {
 
     // Przygotuj dane do rollbacku
     const updateData: any = {};
-    let rollbackValue: any = null;
 
     if (fieldName === 'title') {
-      rollbackValue = oldValue;
       updateData.title = oldValue;
     } else if (fieldName === 'content') {
-      rollbackValue = oldValue;
       updateData.content = oldValue;
     } else if (fieldName === 'status') {
       // Walidacja enuma StoryElementStatus
@@ -532,18 +529,16 @@ export class StoryService {
       ) {
         throw new BadRequestException('Invalid status value in history');
       }
-      rollbackValue = oldValue;
       updateData.status = oldValue;
     } else if (fieldName === 'metadata') {
       if (oldValue) {
         try {
-          rollbackValue = JSON.parse(oldValue);
-          updateData.metadata = rollbackValue;
+          const parsedMetadata = JSON.parse(oldValue);
+          updateData.metadata = parsedMetadata;
         } catch (e) {
           throw new BadRequestException('Invalid metadata JSON in history');
         }
       } else {
-        rollbackValue = null;
         updateData.metadata = null;
       }
     } else {

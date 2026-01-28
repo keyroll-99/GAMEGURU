@@ -68,31 +68,12 @@ function formatValue(value: string | null, fieldName: string) {
     }
   }
   
-  if (fieldName === 'content' && value.length > 100) {
-    return value.substring(0, 100) + '...'
-  }
-  
   return value
 }
 
 function handleRollback(entry: StoryHistoryEntry) {
   if (confirm(`Czy na pewno chcesz przywrócić "${getFieldLabel(entry.field_name)}" do poprzedniej wartości?`)) {
     emit('rollback', entry.id)
-  }
-}
-
-// Compute diff for content fields
-function computeDiff(oldValue: string | null, newValue: string | null, fieldName: string) {
-  if (fieldName !== 'content' || !oldValue || !newValue) {
-    return null
-  }
-  
-  const oldLines = oldValue.split('\n')
-  const newLines = newValue.split('\n')
-  
-  return {
-    oldLines,
-    newLines,
   }
 }
 </script>
