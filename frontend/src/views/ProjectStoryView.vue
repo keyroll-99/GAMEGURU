@@ -80,12 +80,37 @@ async function handleSaveElement(data: UpdateStoryElementDto) {
 
   try {
     await storyStore.updateElement(selectedElement.value.id, data)
+    toast.success('Zapisano fabułę')
     // Odśwież postęp po zapisie, szczególnie gdy zmieniono status sceny
     if (data.status !== undefined && selectedElement.value.type === 'SCENE') {
       await storyStore.fetchProgress(projectId.value)
     }
+    // Odśwież historię po zapisie
+    if (selectedElement.value) {
+      elementHistory.value = await storyStore.fetchHistory(selectedElement.value.id)
+    }
   } catch (error: any) {
     toast.error(error.message || 'Błąd podczas zapisywania')
+  }
+}
+
+async function handleRollback(historyId: string) {
+  if (!selectedElement.value) return
+
+  try {
+    const element = selectedElement.value
+    await storyStore.rollback(element.id, historyId)
+    toast.success('Przywrócono wersję')
+    
+    // Odśwież historię po rollbacku
+    elementHistory.value = await storyStore.fetchHistory(element.id)
+    
+    // Odśwież postęp jeśli to była scena
+    if (element.type === 'SCENE') {
+      await storyStore.fetchProgress(projectId.value)
+    }
+  } catch (error: any) {
+    toast.error(error.message || 'Nie udało się przywrócić')
   }
 }
 
@@ -225,6 +250,7 @@ const typeOptions: Array<{ value: StoryElementType; label: string; icon: string 
           @delete="handleDeleteElement"
           @link-task="handleOpenLinkModal"
           @unlink-node="handleUnlinkNode"
+          @rollback="handleRollback"
         />
       </main>
     </div>

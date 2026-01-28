@@ -21,6 +21,7 @@ import {
   UpdateStoryElementDto,
   CreateConnectionDto,
   LinkNodeDto,
+  RollbackStoryDto,
 } from './dto';
 import { CurrentUser } from '../auth/decorators';
 import { JwtAuthGuard } from '../auth/guards';
@@ -196,5 +197,21 @@ export class StoryController {
     @CurrentUser('id') userId: string,
   ) {
     return this.storyService.getHistory(id, userId);
+  }
+
+  /**
+   * POST /story/:id/rollback - Przywróć wersję z historii
+   */
+  @Post('story/:id/rollback')
+  @ApiOperation({
+    summary: 'Przywróć wartość pola elementu fabuły z historii zmian',
+  })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  rollback(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RollbackStoryDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.storyService.rollback(id, dto.historyId, userId);
   }
 }

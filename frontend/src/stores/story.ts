@@ -290,6 +290,33 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   /**
+   * Przywraca wartość pola na podstawie wpisu historii (rollback)
+   */
+  const rollback = async (elementId: string, historyId: string) => {
+    isLoading.value = true
+    error.value = null
+    try {
+      const updatedElement = await storyApi.rollback(elementId, historyId)
+      
+      // Zaktualizuj element w lokalnym stanie
+      const index = storyElements.value.findIndex((el) => el.id === elementId)
+      if (index !== -1) {
+        storyElements.value[index] = updatedElement
+      }
+      
+      // Odśwież historię
+      await fetchHistory(elementId)
+      
+      return updatedElement
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Błąd podczas przywracania wersji'
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * Zaznacza element
    */
   const selectElement = (elementId: string | null) => {
@@ -374,6 +401,7 @@ export const useStoryStore = defineStore('story', () => {
     linkNode,
     unlinkNode,
     fetchHistory,
+    rollback,
     selectElement,
     toggleExpand,
     expandAll,
