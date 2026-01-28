@@ -17,6 +17,7 @@ const emit = defineEmits<{
   save: [data: UpdateStoryElementDto]
   delete: []
   'unlink-node': [nodeId: string]
+  'link-task': []
 }>()
 
 const editTitle = ref('')
@@ -136,6 +137,15 @@ function handleDelete() {
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
   return date.toLocaleString()
+}
+
+function getStatusLabel(status: string) {
+  const labels = {
+    TODO: 'Do zrobienia',
+    IN_PROGRESS: 'W trakcie',
+    DONE: 'Ukończone',
+  }
+  return labels[status as keyof typeof labels] || status
 }
 </script>
 
@@ -263,15 +273,29 @@ function formatDate(dateStr: string) {
     </div>
 
     <!-- Linked Nodes Section -->
-    <div v-if="linkedNodes && linkedNodes.length > 0" class="linked-nodes">
-      <h4 class="linked-nodes__title">Powiązane taski</h4>
-      <div class="linked-nodes__list">
+    <div class="linked-nodes">
+      <div class="linked-nodes__header">
+        <h4 class="linked-nodes__title">🔗 Powiązane taski</h4>
+        <button class="btn btn--small btn--primary" @click="$emit('link-task')">
+          + Powiąż task
+        </button>
+      </div>
+      
+      <div v-if="linkedNodes && linkedNodes.length > 0" class="linked-nodes__list">
         <div
           v-for="link in linkedNodes"
           :key="link.id"
           class="linked-node-item"
         >
-          <span class="linked-node-item__title">{{ link.node.title }}</span>
+          <div class="linked-node-item__info">
+            <span class="linked-node-item__title">{{ link.node.title }}</span>
+            <span 
+              class="linked-node-item__status"
+              :class="`status--${link.node.status.toLowerCase()}`"
+            >
+              {{ getStatusLabel(link.node.status) }}
+            </span>
+          </div>
           <button
             class="btn-icon btn-icon--danger"
             title="Usuń powiązanie"
@@ -280,6 +304,10 @@ function formatDate(dateStr: string) {
             ×
           </button>
         </div>
+      </div>
+      
+      <div v-else class="linked-nodes__empty">
+        Brak powiązanych tasków. Kliknij "+ Powiąż task" aby dodać.
       </div>
     </div>
   </div>
@@ -530,11 +558,18 @@ function formatDate(dateStr: string) {
   background: #f8fafc;
 }
 
+.linked-nodes__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .linked-nodes__title {
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 12px 0;
+  margin: 0;
 }
 
 .linked-nodes__list {
@@ -543,19 +578,64 @@ function formatDate(dateStr: string) {
   gap: 8px;
 }
 
+.linked-nodes__empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  background: white;
+  border: 1px dashed #e2e8f0;
+  border-radius: 6px;
+}
+
 .linked-node-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
 }
 
+.linked-node-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
 .linked-node-item__title {
   font-size: 13px;
-  color: #475569;
+  font-weight: 500;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linked-node-item__status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.linked-node-item__status.status--todo {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.linked-node-item__status.status--in_progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.linked-node-item__status.status--done {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .btn-icon {
@@ -628,5 +708,10 @@ function formatDate(dateStr: string) {
 
 .btn--danger-outline:hover {
   background: #fef2f2;
+}
+
+.btn--small {
+  padding: 6px 12px;
+  font-size: 12px;
 }
 </style>

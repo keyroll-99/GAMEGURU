@@ -87,6 +87,10 @@ export interface ProgressStats {
   byStatus: Record<StoryElementStatus, number>
   byType: Record<StoryElementType, number>
   completionPercentage: number
+  // Phase 4: Scene-specific progress metrics
+  total_scenes: number
+  completed_scenes: number
+  percent: number
 }
 
 export interface GraphData {

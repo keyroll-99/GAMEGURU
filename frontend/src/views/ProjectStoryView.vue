@@ -8,6 +8,7 @@ import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import StoryTree from '@/components/story/StoryTree.vue'
 import StoryEditor from '@/components/story/StoryEditor.vue'
 import StoryProgress from '@/components/story/StoryProgress.vue'
+import LinkNodeModal from '@/components/story/LinkNodeModal.vue'
 import { useToast } from 'vue-toastification'
 import type { StoryElementType, UpdateStoryElementDto } from '@/api/story'
 
@@ -33,6 +34,8 @@ const showCreateModal = ref(false)
 const createParentId = ref<string | null>(null)
 const createType = ref<StoryElementType>('OVERVIEW')
 const createTitle = ref('')
+
+const showLinkNodeModal = ref(false)
 
 onMounted(async () => {
   const id = projectId.value
@@ -77,8 +80,10 @@ async function handleSaveElement(data: UpdateStoryElementDto) {
 
   try {
     await storyStore.updateElement(selectedElement.value.id, data)
-    // Odśwież postęp po zapisie
-    await storyStore.fetchProgress(projectId.value)
+    // Odśwież postęp po zapisie, szczególnie gdy zmieniono status sceny
+    if (data.status !== undefined && selectedElement.value.type === 'SCENE') {
+      await storyStore.fetchProgress(projectId.value)
+    }
   } catch (error: any) {
     toast.error(error.message || 'Błąd podczas zapisywania')
   }
@@ -88,10 +93,13 @@ async function handleDeleteElement() {
   if (!selectedElement.value) return
 
   try {
+    const wasScene = selectedElement.value.type === 'SCENE'
     await storyStore.deleteElement(selectedElement.value.id)
     toast.success('Element usunięty')
-    // Odśwież postęp po usunięciu
-    await storyStore.fetchProgress(projectId.value)
+    // Odśwież postęp po usunięciu sceny
+    if (wasScene) {
+      await storyStore.fetchProgress(projectId.value)
+    }
   } catch (error: any) {
     toast.error(error.message || 'Błąd podczas usuwania')
   }
@@ -124,8 +132,10 @@ async function handleConfirmCreate() {
     showCreateModal.value = false
     storyStore.selectElement(newElement.id)
     
-    // Odśwież postęp po utworzeniu
-    await storyStore.fetchProgress(projectId.value)
+    // Odśwież postęp po utworzeniu sceny
+    if (createType.value === 'SCENE') {
+      await storyStore.fetchProgress(projectId.value)
+    }
   } catch (error: any) {
     toast.error(error.message || 'Błąd podczas tworzenia elementu')
   }
@@ -133,6 +143,37 @@ async function handleConfirmCreate() {
 
 function handleCancelCreate() {
   showCreateModal.value = false
+}
+
+function handleOpenLinkModal() {
+  showLinkNodeModal.value = true
+}
+
+function handleCloseLinkModal() {
+  showLinkNodeModal.value = false
+}
+
+async function handleLinkNode(nodeId: string) {
+  if (!selectedElement.value) return
+
+  try {
+    await storyStore.linkNode(selectedElement.value.id, { nodeId })
+    toast.success('Task powiązany')
+    showLinkNodeModal.value = false
+  } catch (error: any) {
+    toast.error(error.message || 'Błąd podczas powiązywania tasku')
+  }
+}
+
+async function handleUnlinkNode(nodeId: string) {
+  if (!selectedElement.value) return
+
+  try {
+    await storyStore.unlinkNode(selectedElement.value.id, nodeId)
+    toast.success('Powiązanie usunięte')
+  } catch (error: any) {
+    toast.error(error.message || 'Błąd podczas usuwania powiązania')
+  }
 }
 
 function navigateToGraph() {
@@ -182,6 +223,8 @@ const typeOptions: Array<{ value: StoryElementType; label: string; icon: string 
           :linked-nodes="selectedElement?.linkedNodes"
           @save="handleSaveElement"
           @delete="handleDeleteElement"
+          @link-task="handleOpenLinkModal"
+          @unlink-node="handleUnlinkNode"
         />
       </main>
     </div>
@@ -230,6 +273,14 @@ const typeOptions: Array<{ value: StoryElementType; label: string; icon: string 
         </div>
       </div>
     </div>
+
+    <!-- Link Node Modal -->
+    <LinkNodeModal
+      v-if="showLinkNodeModal"
+      :project-id="projectId"
+      @close="handleCloseLinkModal"
+      @link-node="handleLinkNode"
+    />
   </div>
 </template>
 
