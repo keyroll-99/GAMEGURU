@@ -6,15 +6,21 @@ This document describes the improvements made to the drag & drop functionality i
 ## Problem Statement
 The original issue reported that drag & drop in the MindMap wasn't working smoothly and lacked visual feedback. The requirements from Phase 2 of LISTA_ULEPSZEŃ.md included:
 
-1. **Visual Feedback** (2.1)
-   - Drop target highlighting
-   - Valid/invalid drop indicators
-   - Ghost preview of dragged element
-   - Preview of new relations
+### Status z LISTA_ULEPSZEŃ.md - Faza 2:
 
-2. **Better Drop Detection** (2.2)
-   - Larger drop zones (150px instead of 100px)
-   - Dedicated drop zones between nodes
+#### 2.1 Wizualna informacja zwrotna
+- ✅ **Podświetlanie celów upuszczenia** - Zielony/czerwony highlight
+- ✅ **Widmo przeciąganego elementu** - Opacity 0.5 + grabbing cursor
+- ⏳ **Podgląd nowej relacji** - Nie zaimplementowano (opcjonalne)
+
+#### 2.2 Lepsza detekcja upuszczenia
+- ✅ **Większe strefy upuszczenia** - 100px → 150px
+- ⏳ **Dedykowane strefy między węzłami** - Nie zaimplementowano (wymaga większych zmian UI)
+
+#### 2.3 Optymalizacja wydajności
+- ✅ **Throttling** - RequestAnimationFrame
+- ⏳ **Cache'owanie layoutu** - Nie wymagane dla obecnej wielkości drzew
+- ✅ **Płynniejsze animacje** - CSS transitions
 
 ## Implementation
 

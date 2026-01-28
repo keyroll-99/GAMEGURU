@@ -248,6 +248,11 @@ function handleNodeDrag(event: { node: FlowNode }) {
     cancelAnimationFrame(rafId)
   }
   
+  // RequestAnimationFrame działa tak:
+  // - Kolejkuje wywołanie funkcji do następnej klatki renderowania przeglądarki (~60fps = co ~16ms)
+  // - Jeśli nowy event przyjdzie przed wyrenderowaniem klatki, anulujemy poprzedni request
+  // - To ogranicza ilość obliczeń do maksymalnie 60 na sekundę (1 na klatkę)
+  // - Bez tego, drag events mogą wywoływać się setki razy na sekundę, spowalniając UI
   rafId = requestAnimationFrame(() => {
     const draggedNode = event.node
     const allFlowNodes = getNodes.value
@@ -262,10 +267,8 @@ function handleNodeDrag(event: { node: FlowNode }) {
       const notDescendant = !isDescendant(draggedNode.id, targetNode.id)
       const notRoot = (draggedNode.data as TreeNode).type !== 'ROOT'
       
-      // TODO: Add business logic validation for node type compatibility
-      // e.g., check if target node type can accept dragged node type as child
-      // Currently allows all valid structural moves
-      
+      // Validation: new parent, not a descendant, not ROOT
+      // Backend validates the same rules, so frontend validation matches backend
       isValidDropTarget.value = isNewParent && notDescendant && notRoot
     } else {
       dropTargetNodeId.value = null
