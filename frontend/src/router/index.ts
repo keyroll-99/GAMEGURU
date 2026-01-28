@@ -55,6 +55,12 @@ const router = createRouter({
       component: () => import('../views/ProjectStoryView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/projects/:id/story/graph',
+      name: 'project-story-graph',
+      component: () => import('../views/StoryGraphView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
