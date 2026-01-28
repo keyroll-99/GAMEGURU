@@ -112,8 +112,8 @@ async function loadGraphData() {
   }
 }
 
-function handleRefresh() {
-  loadGraphData()
+async function handleRefresh() {
+  await loadGraphData()
 }
 
 function navigateToStory() {
@@ -138,7 +138,7 @@ async function handleCreateConnection(
     await storyStore.createConnection(fromId, {
       toElementId: toId,
       label: label || undefined,
-      connectionType: connectionType as 'leads_to' | 'branches_to' | 'requires',
+      connectionType: connectionType as any,
     })
     toast.success('Połączenie utworzone')
   } catch (err: any) {

@@ -29,11 +29,11 @@
 
     <!-- Connection Modal -->
     <Transition name="fade">
-      <div v-if="showConnectionModal" class="modal-overlay" @click="cancelConnection">
+      <div v-if="showConnectionModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="connection-modal-title" @click="cancelConnection">
         <div class="modal" @click.stop>
           <div class="modal__header">
-            <h3 class="modal__title">Utwórz połączenie</h3>
-            <button class="modal__close" @click="cancelConnection">×</button>
+            <h3 id="connection-modal-title" class="modal__title">Utwórz połączenie</h3>
+            <button class="modal__close" aria-label="Zamknij dialog" @click="cancelConnection">×</button>
           </div>
           <div class="modal__body">
             <div class="form-group">
@@ -61,6 +61,29 @@
             </button>
             <button class="btn btn--primary" @click="confirmConnection">
               Utwórz
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Delete Confirmation Modal -->
+    <Transition name="fade">
+      <div v-if="showDeleteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" @click="cancelDelete">
+        <div class="modal modal--small" @click.stop>
+          <div class="modal__header">
+            <h3 id="delete-modal-title" class="modal__title">Usuń połączenie</h3>
+            <button class="modal__close" aria-label="Zamknij dialog" @click="cancelDelete">×</button>
+          </div>
+          <div class="modal__body">
+            <p>Czy na pewno chcesz usunąć to połączenie?</p>
+          </div>
+          <div class="modal__footer">
+            <button class="btn btn--secondary" @click="cancelDelete">
+              Anuluj
+            </button>
+            <button class="btn btn--danger" @click="confirmDelete">
+              Usuń
             </button>
           </div>
         </div>
@@ -103,8 +126,12 @@ const pendingConnection = ref<Connection | null>(null)
 const connectionType = ref<'leads_to' | 'branches_to' | 'requires'>('leads_to')
 const connectionLabel = ref('')
 
+// Delete confirmation modal state
+const showDeleteModal = ref(false)
+const pendingDeleteEdgeId = ref<string | null>(null)
+
 /**
- * Layout algorytm używający dagre do ułożenia węzłów w DAG
+ * Layout algorithm using dagre for DAG node positioning
  */
 function layoutNodes(elements: StoryElement[], connections: StoryConnection[]): { nodes: FlowNode[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph()
@@ -119,29 +146,38 @@ function layoutNodes(elements: StoryElement[], connections: StoryConnection[]): 
   const NODE_WIDTH = 200
   const NODE_HEIGHT = 80
 
-  // Dodaj węzły
+  // Add nodes
   elements.forEach(element => {
     g.setNode(element.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
   })
 
-  // Dodaj krawędzie
+  // Add edges
   connections.forEach(conn => {
     g.setEdge(conn.from_element_id, conn.to_element_id)
   })
 
-  // Uruchom layout
+  // Run layout
   dagre.layout(g)
 
-  // Przekonwertuj węzły
-  const flowNodes: FlowNode[] = elements.map(element => {
+  // Convert nodes with fallback positioning for isolated nodes
+  const flowNodes: FlowNode[] = elements.map((element, index) => {
     const nodeWithPosition = g.node(element.id)
+    // Fallback for isolated nodes (not connected to any other node)
+    const hasPosition = nodeWithPosition && nodeWithPosition.x !== undefined && nodeWithPosition.y !== undefined
+    const position = hasPosition
+      ? { 
+          x: nodeWithPosition.x - NODE_WIDTH / 2, 
+          y: nodeWithPosition.y - NODE_HEIGHT / 2 
+        }
+      : {
+          x: 50 + (index % 3) * 250,
+          y: 50 + Math.floor(index / 3) * 120
+        }
+    
     return {
       id: element.id,
       type: 'storyGraphNode',
-      position: { 
-        x: nodeWithPosition.x - NODE_WIDTH / 2, 
-        y: nodeWithPosition.y - NODE_HEIGHT / 2 
-      },
+      position,
       data: {
         id: element.id,
         type: element.type,
@@ -246,10 +282,21 @@ function cancelConnection() {
 }
 
 async function handleEdgeClick(event: EdgeMouseEvent) {
-  const confirmed = confirm('Czy na pewno chcesz usunąć to połączenie?')
-  if (confirmed) {
-    emit('delete-connection', event.edge.id)
+  pendingDeleteEdgeId.value = event.edge.id
+  showDeleteModal.value = true
+}
+
+function confirmDelete() {
+  if (pendingDeleteEdgeId.value) {
+    emit('delete-connection', pendingDeleteEdgeId.value)
   }
+  showDeleteModal.value = false
+  pendingDeleteEdgeId.value = null
+}
+
+function cancelDelete() {
+  showDeleteModal.value = false
+  pendingDeleteEdgeId.value = null
 }
 
 onMounted(() => {
@@ -438,6 +485,19 @@ onMounted(() => {
 
 .btn--secondary:hover {
   background: #f8fafc;
+}
+
+.btn--danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn--danger:hover {
+  background: #dc2626;
+}
+
+.modal--small {
+  max-width: 400px;
 }
 
 /* Fade transition */
