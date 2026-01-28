@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { nodesApi, type Node, type CreateNodeDto, type UpdateNodeDto, type MoveNodeDto, type ReorderChildrenDto } from '@/api/nodes'
+import { viewStateApi, type SaveViewStateDto } from '@/api/view-state'
 
 export interface TreeNode extends Node {
   children: TreeNode[]
   isExpanded: boolean
 }
+
+// Debounce helper
+let saveStateTimeout: ReturnType<typeof setTimeout> | null = null
+const SAVE_DEBOUNCE_MS = 1000
 
 export const useNodesStore = defineStore('nodes', () => {
   // State
@@ -14,6 +19,12 @@ export const useNodesStore = defineStore('nodes', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const expandedNodeIds = ref<Set<string>>(new Set())
+  
+  // View state
+  const currentProjectId = ref<string | null>(null)
+  const zoom = ref(1.0)
+  const pan = ref({ x: 50, y: 50 })
+  const viewType = ref('mindmap')
 
   // Getters
   const selectedNode = computed(() => {
@@ -58,11 +69,28 @@ export const useNodesStore = defineStore('nodes', () => {
   const fetchNodes = async (projectId: string) => {
     isLoading.value = true
     error.value = null
+    currentProjectId.value = projectId
     try {
+      // Fetch nodes
       nodes.value = await nodesApi.getByProject(projectId)
       
-      // Domyślnie rozwiń ROOT i pierwszy poziom
-      if (nodes.value.length > 0) {
+      // Load saved view state
+      try {
+        const savedState = await viewStateApi.get(projectId)
+        if (savedState) {
+          zoom.value = savedState.zoom
+          pan.value = { x: savedState.pan_x, y: savedState.pan_y }
+          viewType.value = savedState.view_type
+          expandedNodeIds.value = new Set(savedState.expanded_nodes)
+        } else {
+          // Default: expand ROOT and first level
+          const root = nodes.value.find((n) => n.type === 'ROOT')
+          if (root) {
+            expandedNodeIds.value.add(root.id)
+          }
+        }
+      } catch (e) {
+        // If view state doesn't exist, use defaults
         const root = nodes.value.find((n) => n.type === 'ROOT')
         if (root) {
           expandedNodeIds.value.add(root.id)
@@ -146,15 +174,31 @@ export const useNodesStore = defineStore('nodes', () => {
   }
 
   const moveNode = async (nodeId: string, dto: MoveNodeDto) => {
-    isLoading.value = true
-    error.value = null
+    // Store original state for rollback
+    const originalNodes = [...nodes.value]
+    
+    // Optimistic update - update local state immediately
+    const nodeIndex = nodes.value.findIndex((n) => n.id === nodeId)
+    if (nodeIndex !== -1) {
+      const node = nodes.value[nodeIndex]
+      if (node) {
+        node.parent_id = dto.newParentId
+        node.order_index = dto.newOrderIndex
+      }
+    }
+    
+    // Expand new parent to show moved node
+    if (dto.newParentId && !expandedNodeIds.value.has(dto.newParentId)) {
+      expandedNodeIds.value.add(dto.newParentId)
+    }
+    
     try {
+      // Make API call in background
       const movedNode = await nodesApi.move(nodeId, dto)
       
-      // Aktualizuj węzeł w lokalnym stanie
+      // Update with server response
       const index = nodes.value.findIndex((n) => n.id === nodeId)
       if (index !== -1) {
-        // Zaktualizuj parent_id i order_index
         const node = nodes.value[index]
         if (node) {
           node.parent_id = movedNode.parent_id
@@ -164,10 +208,10 @@ export const useNodesStore = defineStore('nodes', () => {
       
       return movedNode
     } catch (e: unknown) {
+      // Rollback on error
+      nodes.value = originalNodes
       error.value = e instanceof Error ? e.message : 'Błąd podczas przenoszenia węzła'
       throw e
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -234,10 +278,13 @@ export const useNodesStore = defineStore('nodes', () => {
     } else {
       expandedNodeIds.value.add(nodeId)
     }
+    // Auto-save view state
+    saveViewStateDebounced()
   }
 
   const expandAll = () => {
     nodes.value.forEach((n) => expandedNodeIds.value.add(n.id))
+    saveViewStateDebounced()
   }
 
   const collapseAll = () => {
@@ -247,10 +294,72 @@ export const useNodesStore = defineStore('nodes', () => {
     if (root) {
       expandedNodeIds.value.add(root.id)
     }
+    saveViewStateDebounced()
   }
 
   const isExpanded = (nodeId: string) => {
     return expandedNodeIds.value.has(nodeId)
+  }
+
+  /**
+   * Save view state with debouncing
+   */
+  const saveViewStateDebounced = () => {
+    if (!currentProjectId.value) return
+    
+    if (saveStateTimeout) {
+      clearTimeout(saveStateTimeout)
+    }
+    
+    saveStateTimeout = setTimeout(() => {
+      saveViewState()
+    }, SAVE_DEBOUNCE_MS)
+  }
+
+  /**
+   * Save view state immediately
+   */
+  const saveViewState = async () => {
+    if (!currentProjectId.value) return
+    
+    try {
+      const dto: SaveViewStateDto = {
+        projectId: currentProjectId.value,
+        viewType: viewType.value,
+        zoom: zoom.value,
+        panX: pan.value.x,
+        panY: pan.value.y,
+        expandedNodes: Array.from(expandedNodeIds.value),
+      }
+      await viewStateApi.save(dto)
+    } catch (e) {
+      console.error('Failed to save view state:', e)
+      // Don't show error to user - it's a background operation
+    }
+  }
+
+  /**
+   * Update zoom level
+   */
+  const setZoom = (newZoom: number) => {
+    zoom.value = newZoom
+    saveViewStateDebounced()
+  }
+
+  /**
+   * Update pan position
+   */
+  const setPan = (newPan: { x: number; y: number }) => {
+    pan.value = newPan
+    saveViewStateDebounced()
+  }
+
+  /**
+   * Set view type
+   */
+  const setViewType = (type: string) => {
+    viewType.value = type
+    saveViewState() // Save immediately
   }
 
   const reset = () => {
@@ -258,6 +367,10 @@ export const useNodesStore = defineStore('nodes', () => {
     selectedNodeId.value = null
     expandedNodeIds.value.clear()
     error.value = null
+    currentProjectId.value = null
+    zoom.value = 1.0
+    pan.value = { x: 50, y: 50 }
+    viewType.value = 'mindmap'
   }
 
   return {
@@ -267,6 +380,9 @@ export const useNodesStore = defineStore('nodes', () => {
     isLoading,
     error,
     expandedNodeIds,
+    zoom,
+    pan,
+    viewType,
     
     // Getters
     selectedNode,
@@ -287,6 +403,10 @@ export const useNodesStore = defineStore('nodes', () => {
     expandAll,
     collapseAll,
     isExpanded,
+    setZoom,
+    setPan,
+    setViewType,
+    saveViewState,
     reset,
   }
 })

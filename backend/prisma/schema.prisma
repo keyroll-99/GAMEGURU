@@ -28,6 +28,7 @@ model User {
   node_assignees   NodeAssignee[]
   node_changes     NodeHistory[]
   story_history    StoryHistory[]
+  view_states      UserViewState[]
 
   @@map("users")
 }
@@ -51,6 +52,7 @@ model Project {
   nodes         Node[]
   notes         ProjectNote[]
   storyElements StoryElement[]
+  view_states   UserViewState[]
 
   @@map("projects")
 }
@@ -249,4 +251,30 @@ model StoryHistory {
 
   @@index([story_element_id])
   @@map("story_history")
+}
+
+// ==========================================
+// PHASE 5: User View State Persistence
+// ==========================================
+
+model UserViewState {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  project_id String   @db.Uuid
+  view_type  String   @default("mindmap") @db.VarChar(50) // "mindmap" or "board"
+  zoom       Float    @default(1.0)
+  pan_x      Float    @default(50.0)
+  pan_y      Float    @default(50.0)
+  expanded_nodes Json @default("[]") // Array of node IDs that are expanded
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, project_id])
+  @@index([user_id])
+  @@index([project_id])
+  @@map("user_view_states")
 }
