@@ -8,6 +8,23 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// Phase 4: Scene-specific progress as primary metric
+const sceneProgress = computed(() => {
+  if (!props.stats) {
+    return {
+      total: 0,
+      completed: 0,
+      percent: 0,
+    }
+  }
+  
+  return {
+    total: props.stats.total_scenes,
+    completed: props.stats.completed_scenes,
+    percent: props.stats.percent,
+  }
+})
+
 const completionPercentage = computed(() => {
   return props.stats?.completionPercentage || 0
 })
@@ -65,22 +82,28 @@ const typeBreakdown = computed(() => {
 <template>
   <div class="story-progress">
     <div class="story-progress__header">
-      <h4 class="story-progress__title">Postęp fabuły</h4>
+      <h4 class="story-progress__title">Postęp fabuły (Sceny)</h4>
       <div class="story-progress__percentage">
-        {{ completionPercentage.toFixed(0) }}%
+        {{ sceneProgress.percent }}%
       </div>
     </div>
 
     <div class="story-progress__bar">
       <div
         class="story-progress__fill"
-        :style="{ width: `${completionPercentage}%` }"
+        :style="{ width: `${sceneProgress.percent}%` }"
       ></div>
+    </div>
+
+    <div v-if="stats" class="story-progress__summary">
+      <span class="story-progress__text">
+        {{ sceneProgress.completed }} / {{ sceneProgress.total }} scen ukończonych
+      </span>
     </div>
 
     <div v-if="stats" class="story-progress__details">
       <div class="stats-section">
-        <h5 class="stats-section__title">Status</h5>
+        <h5 class="stats-section__title">Status wszystkich elementów</h5>
         <div class="stats-list">
           <div
             v-for="item in statusBreakdown"
@@ -157,13 +180,27 @@ const typeBreakdown = computed(() => {
   background: #e2e8f0;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .story-progress__fill {
   height: 100%;
   background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
   transition: width 0.3s ease;
+}
+
+.story-progress__summary {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.story-progress__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
 }
 
 .story-progress__details {

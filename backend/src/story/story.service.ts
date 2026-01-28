@@ -522,6 +522,16 @@ export class StoryService {
       (el) => el.status === StoryElementStatus.REVIEW,
     ).length;
 
+    // Statystyki dla scen (Phase 4 requirement)
+    const scenes = elements.filter((el) => el.type === 'SCENE');
+    const total_scenes = scenes.length;
+    const completed_scenes = scenes.filter(
+      (el) => el.status === StoryElementStatus.COMPLETED,
+    ).length;
+    const percent = total_scenes > 0 
+      ? Math.round((completed_scenes / total_scenes) * 100) 
+      : 0;
+
     return {
       total,
       byStatus: {
@@ -534,6 +544,10 @@ export class StoryService {
       completedByType,
       completionPercentage:
         total > 0 ? Math.round((completed / total) * 100) : 0,
+      // Phase 4: Scene-specific progress metrics
+      total_scenes,
+      completed_scenes,
+      percent,
     };
   }
 
