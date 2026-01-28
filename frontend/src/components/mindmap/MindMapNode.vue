@@ -126,7 +126,7 @@ function handleToggle() {
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.2s ease;
   min-width: 140px;
   max-width: 300px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);

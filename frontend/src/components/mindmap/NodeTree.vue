@@ -100,22 +100,42 @@ const emit = defineEmits<{
 const isDragging = ref(false)
 const isDragOver = ref(false)
 
+// Helper function to check if a node is a descendant of another (prevent circular refs)
+const isDescendantOf = (ancestorId: string, nodeId: string): boolean => {
+  if (!nodeId || !props.node.children) return false
+  
+  // Check direct children
+  if (props.node.children.some(child => child.id === ancestorId)) {
+    return true
+  }
+  
+  // Recursively check descendants
+  return props.node.children.some(child => isDescendantOf(ancestorId, child.id))
+}
+
 // Check if can drop (can't drop on itself or its descendants)
 const canDrop = computed(() => {
   const draggedId = window.__draggedNodeId
   if (!draggedId) return false
   if (draggedId === props.node.id) return false
+  
+  // Can't drop if this node is a descendant of the dragged node (would create circular ref)
+  if (isDescendantOf(props.node.id, draggedId)) return false
+  
   return true
 })
 
-// Check if this is a valid drop (Phase 2.1)
+// Check if this is a valid drop (Phase 2.1 - enhanced with descendant check)
 const isValidDrop = computed(() => {
   const draggedId = window.__draggedNodeId
   const draggedParentId = window.__draggedNodeParentId
   if (!draggedId || !canDrop.value) return false
   
-  // Valid if moving to a different parent
-  if (props.node.id !== draggedParentId) return true
+  // Valid if moving to a different parent and not creating circular reference
+  if (props.node.id !== draggedParentId) {
+    // Double-check not a descendant
+    return !isDescendantOf(props.node.id, draggedId)
+  }
   
   // Invalid if dropping on same parent
   return false

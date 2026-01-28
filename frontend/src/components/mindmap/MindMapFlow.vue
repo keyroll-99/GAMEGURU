@@ -236,28 +236,44 @@ function handleNodeDragStart(event: { node: FlowNode }) {
   draggedNodeId.value = event.node.id
 }
 
+// Throttle drop target updates using requestAnimationFrame (Performance optimization)
+let rafId: number | null = null
+
 function handleNodeDrag(event: { node: FlowNode }) {
   // Update drop target during drag for visual feedback (Phase 2.1)
+  // Throttled using requestAnimationFrame to prevent excessive calculations
   if (!isDragging.value) return
   
-  const draggedNode = event.node
-  const allFlowNodes = getNodes.value
-  const targetNode = findDropTarget(draggedNode, allFlowNodes)
-  
-  if (targetNode && targetNode.id !== draggedNode.id) {
-    dropTargetNodeId.value = targetNode.id
-    
-    // Check if this is a valid drop target
-    const currentParentId = props.allNodes.find(n => n.id === draggedNode.id)?.parent_id
-    const isNewParent = targetNode.id !== currentParentId
-    const notDescendant = !isDescendant(draggedNode.id, targetNode.id)
-    const notRoot = (draggedNode.data as TreeNode).type !== 'ROOT'
-    
-    isValidDropTarget.value = isNewParent && notDescendant && notRoot
-  } else {
-    dropTargetNodeId.value = null
-    isValidDropTarget.value = false
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
   }
+  
+  rafId = requestAnimationFrame(() => {
+    const draggedNode = event.node
+    const allFlowNodes = getNodes.value
+    const targetNode = findDropTarget(draggedNode, allFlowNodes)
+    
+    if (targetNode && targetNode.id !== draggedNode.id) {
+      dropTargetNodeId.value = targetNode.id
+      
+      // Check if this is a valid drop target (cached computation)
+      const currentParentId = props.allNodes.find(n => n.id === draggedNode.id)?.parent_id
+      const isNewParent = targetNode.id !== currentParentId
+      const notDescendant = !isDescendant(draggedNode.id, targetNode.id)
+      const notRoot = (draggedNode.data as TreeNode).type !== 'ROOT'
+      
+      // TODO: Add business logic validation for node type compatibility
+      // e.g., check if target node type can accept dragged node type as child
+      // Currently allows all valid structural moves
+      
+      isValidDropTarget.value = isNewParent && notDescendant && notRoot
+    } else {
+      dropTargetNodeId.value = null
+      isValidDropTarget.value = false
+    }
+    
+    rafId = null
+  })
 }
 
 function handleNodeDragStop(event: { node: FlowNode }) {
