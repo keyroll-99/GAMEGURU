@@ -104,12 +104,12 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
 - [x] `0` - Reset zoom do 100%
 - [x] `E` - Rozwiń wszystko
 - [x] `C` - Zwiń wszystko
+- [x] `N` - Nowy węzeł
 
 ### Do zrobienia:
 
 #### 4.1 Skróty klawiszowe (pozostałe)
 - [ ] `Spacja + Przeciągnięcie` - Przesuwanie canvas
-- [ ] `N` - Nowy węzeł
 - [ ] `Ctrl+Z` - Cofnij
 - [ ] `Ctrl+Y` - Ponów
 

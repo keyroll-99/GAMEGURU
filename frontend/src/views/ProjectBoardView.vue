@@ -405,6 +405,14 @@ onKeyStroke(['c', 'C'], (e) => {
   }
 })
 
+onKeyStroke(['n', 'N'], (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+  if (e.ctrlKey || e.metaKey) return
+
+  handleAddNode()
+})
+
 // Selectable parents for new node
 const selectableParents = computed(() => {
   return nodesStore.nodes // Allow all nodes to be parents including milestones
