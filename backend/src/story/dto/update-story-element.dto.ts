@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsInt, Min, MinLength, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+  MinLength,
+  IsObject,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StoryElementStatus } from '@prisma/client';
 

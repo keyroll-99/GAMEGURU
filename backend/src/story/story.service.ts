@@ -652,9 +652,10 @@ export class StoryService {
     const completed_scenes = scenes.filter(
       (el) => el.status === StoryElementStatus.COMPLETED,
     ).length;
-    const percent = total_scenes > 0 
-      ? Math.round((completed_scenes / total_scenes) * 100) 
-      : 0;
+    const percent =
+      total_scenes > 0
+        ? Math.round((completed_scenes / total_scenes) * 100)
+        : 0;
 
     return {
       total,

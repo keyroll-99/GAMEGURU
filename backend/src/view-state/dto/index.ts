@@ -1,1 +1,1 @@
-export * from './save-view-state.dto'
+export * from './save-view-state.dto';
