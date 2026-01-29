@@ -6,12 +6,36 @@
         :is-owner="isOwner"
       >
         <template #actions>
-          <button class="btn btn--secondary" @click="handleExpandAll">
-            Rozwiń wszystko
-          </button>
-          <button class="btn btn--secondary" @click="handleCollapseAll">
-            Zwiń wszystko
-          </button>
+          <div class="view-toggle">
+            <button
+              class="btn"
+              :class="viewType === 'mindmap' ? 'btn--primary' : 'btn--secondary'"
+              @click="nodesStore.setViewType('mindmap')"
+              title="Widok Mapy Myśli"
+            >
+              🗺️ Mapa
+            </button>
+            <button
+              class="btn"
+              :class="viewType === 'board' ? 'btn--primary' : 'btn--secondary'"
+              @click="nodesStore.setViewType('board')"
+              title="Widok Tablicy"
+            >
+              📊 Tablica
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <template v-if="viewType === 'mindmap'">
+            <button class="btn btn--secondary" @click="handleExpandAll">
+              Rozwiń wszystko
+            </button>
+            <button class="btn btn--secondary" @click="handleCollapseAll">
+              Zwiń wszystko
+            </button>
+          </template>
+
           <button class="btn btn--primary" @click="handleAddNode">
             + Dodaj węzeł
           </button>
@@ -29,9 +53,11 @@
         <button @click="loadNodes">Spróbuj ponownie</button>
       </div>
 
-      <!-- Mind Map Canvas -->
+      <!-- Content -->
       <div v-else class="mind-map-view__content">
+        <!-- Mind Map View -->
         <MindMapFlow
+          v-if="viewType === 'mindmap'"
           ref="mindMapRef"
           :nodes-tree="nodesTree"
           :selected-node-id="selectedNodeId"
@@ -43,7 +69,16 @@
           @reorder-children="handleReorderChildren"
           @change-parent="handleChangeParent"
         />
-        <div v-if="!nodesTree" class="mind-map-view__empty">
+
+        <!-- Board View -->
+        <BoardView
+          v-else-if="viewType === 'board'"
+          :all-nodes="allNodes"
+          :selected-node-id="selectedNodeId"
+          @select-node="handleSelectNode"
+        />
+
+        <div v-if="!nodesTree && viewType === 'mindmap'" class="mind-map-view__empty">
           Brak węzłów. Utwórz pierwszy węzeł klikając "Dodaj węzeł".
         </div>
 
@@ -239,6 +274,7 @@ import { useToast } from 'vue-toastification'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ProjectHeader from '@/components/project/ProjectHeader.vue'
 import { MindMapFlow } from '@/components/mindmap'
+import BoardView from '@/components/board/BoardView.vue'
 import { useNodesStore } from '@/stores/nodes'
 import { useProjectsStore } from '@/stores/projects'
 import { useAuthStore } from '@/stores/auth'
@@ -275,6 +311,7 @@ const selectedNodeId = computed(() => nodesStore.selectedNodeId)
 const selectedNode = computed(() => nodesStore.selectedNode)
 const rootNode = computed(() => nodesStore.rootNode)
 const allNodes = computed(() => nodesStore.nodes)
+const viewType = computed(() => nodesStore.viewType)
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -981,5 +1018,38 @@ const openChildrenPanel = () => {
 
 .btn--icon:hover {
   background: #e2e8f0;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.view-toggle .btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.view-toggle .btn--secondary {
+  border: none;
+  background: transparent;
+}
+
+.view-toggle .btn--secondary:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.view-toggle .btn--primary {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #e2e8f0;
+  margin: 0 8px;
 }
 </style>
