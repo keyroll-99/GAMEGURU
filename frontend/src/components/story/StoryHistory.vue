@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import type { StoryHistoryEntry } from '@/api/story'
 
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 interface Props {
   history: StoryHistoryEntry[]
   isLoading?: boolean
@@ -95,7 +97,7 @@ function handleRollback(entry: StoryHistoryEntry) {
           <div class="history-entry__user-info">
             <img
               v-if="entry.user.avatar_url"
-              :src="entry.user.avatar_url"
+              :src="`${apiUrl}/${entry.user.avatar_url}`"
               :alt="entry.user.username"
               class="history-entry__avatar"
             />

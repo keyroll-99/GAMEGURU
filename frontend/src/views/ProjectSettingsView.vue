@@ -10,6 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const projectsStore = useProjectsStore()
 const authStore = useAuthStore()
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const projectId = computed(() => route.params.id as string)
 
@@ -294,7 +295,7 @@ function goBack() {
             <div class="member-info">
               <img
                 v-if="member.user.avatar_url"
-                :src="member.user.avatar_url"
+                :src="`${apiUrl}/${member.user.avatar_url}`"
                 :alt="member.user.username"
                 class="member-avatar"
               />
