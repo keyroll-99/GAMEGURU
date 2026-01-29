@@ -75,6 +75,7 @@
           v-else-if="viewType === 'board'"
           :all-nodes="allNodes"
           :selected-node-id="selectedNodeId"
+          :project-members="projectMembers"
           @select-node="handleSelectNode"
         />
 
@@ -343,6 +344,64 @@ onKeyStroke(['Delete', 'Backspace'], (e) => {
 
   if (selectedNode.value && selectedNode.value.type !== 'ROOT') {
     handleDeleteNode()
+  }
+})
+
+// Phase 4: Keyboard Shortcuts
+onKeyStroke(['+', '='], (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+
+  if (viewType.value === 'mindmap' && mindMapRef.value) {
+    mindMapRef.value.zoomIn()
+  }
+})
+
+onKeyStroke('-', (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+
+  if (viewType.value === 'mindmap' && mindMapRef.value) {
+    mindMapRef.value.zoomOut()
+  }
+})
+
+onKeyStroke('0', (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+
+  if (viewType.value === 'mindmap' && mindMapRef.value) {
+    mindMapRef.value.zoomTo(1)
+  }
+})
+
+onKeyStroke(['f', 'F'], (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+  if (e.ctrlKey || e.metaKey) return // Allow Ctrl+F
+
+  if (viewType.value === 'mindmap' && mindMapRef.value) {
+    mindMapRef.value.fitView()
+  }
+})
+
+onKeyStroke(['e', 'E'], (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+  if (e.ctrlKey || e.metaKey) return
+
+  if (viewType.value === 'mindmap') {
+    handleExpandAll()
+  }
+})
+
+onKeyStroke(['c', 'C'], (e) => {
+  const target = e.target as HTMLElement
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+  if (e.ctrlKey || e.metaKey) return // Allow Copy
+
+  if (viewType.value === 'mindmap') {
+    handleCollapseAll()
   }
 })
 

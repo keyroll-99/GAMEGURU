@@ -78,7 +78,7 @@ const emit = defineEmits<{
   'change-parent': [nodeId: string, newParentId: string]
 }>()
 
-const { fitView, getNodes, setViewport, getViewport } = useVueFlow()
+const { fitView, getNodes, setViewport, getViewport, zoomIn, zoomOut, zoomTo } = useVueFlow()
 
 // Get nodes store for state persistence
 const nodesStore = useNodesStore()
@@ -396,6 +396,9 @@ function handleReorderChildren(childrenIds: string[]) {
 defineExpose({
   fitView,
   openChildrenPanel,
+  zoomIn,
+  zoomOut,
+  zoomTo,
 })
 
 onMounted(() => {

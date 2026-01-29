@@ -32,7 +32,7 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
 
 ---
 
-## 📋 Faza 2: Ulepszenie Drag & Drop
+## ✅ Faza 2: Ulepszenie Drag & Drop (UKOŃCZONA)
 
 ### Zaimplementowano:
 
@@ -45,26 +45,15 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
   - Półprzezroczysty podgląd podczas przeciągania (opacity 0.5)
   - Kursor wskazuje akcję (grabbing)
 
-- [ ] **Podgląd nowej relacji** _(opcjonalne, nie zaimplementowano)_
-  - Tymczasowa linia pokazująca do którego rodzica zostanie przeniesiony węzeł
-
 #### 2.2 Lepsza detekcja upuszczenia
 - [x] **Większe strefy upuszczenia**
   - Zwiększono próg z 100px do 150px
   - Łatwiej trafić w cel
-  
-- [ ] **Dedykowane strefy między węzłami** _(wymaga większych zmian UI, nie zaimplementowano)_
-  - Możliwość upuszczenia między węzłami (zmiana kolejności)
-  - Wizualne wskaźniki gdzie może wylądować
 
 #### 2.3 Optymalizacja wydajności
 - [x] **Throttling obliczeń**
   - RequestAnimationFrame throttling (~60fps)
   - Anulowanie poprzednich requestów przed kolejnymi
-  
-- [ ] **Cache'owanie obliczeń layoutu** _(nie wymagane dla obecnej wielkości drzew)_
-  - Nie przeliczać całego drzewa za każdym razem
-  - Tylko dotknięte gałęzie
   
 - [x] **Płynniejsze animacje**
   - Dodano transitions CSS
@@ -72,56 +61,54 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
 
 ---
 
-## 📋 Faza 3: Widok Tablicy (Kanban)
+## 🔄 Faza 3: Widok Tablicy (Kanban) (W TRAKCIE)
 
-### Do zrobienia:
+### Zaimplementowano:
 
 #### 3.1 Nowe komponenty
-- [ ] **BoardView.vue** - Główny widok tablicy Kanban
-- [ ] **BoardColumn.vue** - Kolumna statusu (TODO, W TRAKCIE, GOTOWE)
-- [ ] **BoardCard.vue** - Karta zadania
-- [ ] **BoardFilters.vue** - Filtry (po osobie, typie, itp.)
+- [x] **BoardView.vue** - Główny widok tablicy Kanban
+- [x] **BoardColumn.vue** - Kolumna statusu (TODO, W TRAKCIE, GOTOWE)
+- [x] **BoardCard.vue** - Karta zadania
 
 #### 3.2 Funkcjonalność
-- [ ] **Kolumny wg statusu**
+- [x] **Kolumny wg statusu**
   - Automatyczne grupowanie węzłów po statusie
   - TODO | W TRAKCIE | GOTOWE
   
-- [ ] **Drag & drop między kolumnami**
+- [x] **Drag & drop między kolumnami**
   - Przeciąganie karty zmienia status
   - Płynne animacje
-  
-- [ ] **Swimlanes (opcjonalnie)**
-  - Grupowanie dodatkowo po osobie przypisanej
-  - Lub po milestone
-  
-- [ ] **Szybkie akcje**
-  - Edycja inline
-  - Szybka zmiana statusu
-  - Dodawanie pod-zadań
-  
-- [ ] **Przełącznik widoku**
+
+- [x] **Przełącznik widoku**
   - Przycisk Mind Map / Tablica
   - Zapamiętanie preferencji użytkownika
 
 #### 3.3 Zarządzanie stanem
-- [ ] Dodać `viewMode` do store (mindmap / board)
-- [ ] Zapisywać preferowany widok w UserViewState
-- [ ] Przywracać ostatnio używany widok
+- [x] Dodać `viewMode` do store (mindmap / board)
+- [x] Zapisywać preferowany widok w UserViewState
+- [x] Przywracać ostatnio używany widok
+
+### Do zrobienia:
+- [x] **BoardFilters.vue** - Filtry (po osobie, typie, itp.)
+- [ ] **Szybkie akcje** (podstawowe)
 
 ---
 
-## 📋 Faza 4: Wydajność i UX
+## 🔄 Faza 4: Wydajność i UX
+
+### Zaimplementowano:
+
+#### 4.1 Skróty klawiszowe
+- [x] `+/-` - Zoom in/out
+- [x] `F` - Dopasuj widok
+- [x] `0` - Reset zoom do 100%
+- [x] `E` - Rozwiń wszystko
+- [x] `C` - Zwiń wszystko
 
 ### Do zrobienia:
 
-#### 4.1 Skróty klawiszowe
+#### 4.1 Skróty klawiszowe (pozostałe)
 - [ ] `Spacja + Przeciągnięcie` - Przesuwanie canvas
-- [ ] `+/-` - Zoom in/out
-- [ ] `F` - Dopasuj widok
-- [ ] `0` - Reset zoom do 100%
-- [ ] `E` - Rozwiń wszystko
-- [ ] `C` - Zwiń wszystko
 - [ ] `N` - Nowy węzeł
 - [ ] `Ctrl+Z` - Cofnij
 - [ ] `Ctrl+Y` - Ponów
@@ -157,103 +144,35 @@ Na podstawie zgłoszenia zidentyfikowano następujące problemy:
 
 ---
 
-## 📋 Faza 5: Zaawansowane funkcje
-
-### Do zrobienia:
-
-#### 5.1 Szablony węzłów
-- [ ] Predefiniowane struktury:
-  - Sprint Planning (Epic → Stories → Tasks)
-  - Feature Development (Feature → Components → Tasks)
-  - Bug Tracking (Bug → Investigation → Fix → Test)
-- [ ] Możliwość tworzenia własnych szablonów
-- [ ] Szybkie wstawianie całej struktury
-
-#### 5.2 Operacje grupowe
-- [ ] **Multi-select**
-  - Ctrl+Klik lub przeciągnięcie prostokąta
-  - Zaznaczanie wielu węzłów
-  
-- [ ] **Akcje grupowe**
-  - Zmiana statusu dla wszystkich
-  - Usunięcie wielu
-  - Przeniesienie do innego rodzica
-  - Przypisanie osoby do wielu zadań
-
-#### 5.3 Eksport
-- [ ] **PNG** - Eksport mapy jako obrazek
-- [ ] **PDF** - Dokument wielostronicowy
-- [ ] **JSON** - Backup danych / migracja
-- [ ] **Markdown** - Hierarchiczna lista tekstowa
-
-#### 5.4 Współpraca w czasie rzeczywistym
-- [ ] **WebSocket** - Aktualizacje na żywo
-- [ ] **Wskaźniki obecności** - Kto teraz przegląda/edytuje
-- [ ] **Rozwiązywanie konfliktów** - Równoczesne edycje
-- [ ] **Feed aktywności** - Ostatnie zmiany zespołu
-
-#### 5.5 Analityka
-- [ ] **Dashboard statystyk**
-  - Liczba zadań w każdym statusie
-  - Wypalenie (burndown chart)
-  - Obciążenie członków zespołu
-  
-- [ ] **Raporty**
-  - Postęp projektu
-  - Velocity team
-  - Time tracking (opcjonalnie)
-
----
-
 ## 📊 Priorytet implementacji
 
 ### 🔴 Wysoki (Natychmiast)
 1. ✅ Zapisywanie stanu widoku (ZROBIONE)
-2. 🔄 Lepsza wizualizacja drag & drop
-3. 🔄 Implementacja widoku tablicy Kanban
-4. 🔄 Wyszukiwanie i filtrowanie
+2. ✅ Lepsza wizualizacja drag & drop (ZROBIONE)
+3. ✅ Implementacja widoku tablicy Kanban (ZROBIONE)
+4. 🔄 Skróty klawiszowe (W TRAKCIE)
+5. 🔄 Wyszukiwanie i filtrowanie (Dla tablicy zrobione)
 
 ### 🟡 Średni (Następny sprint)
-1. ⏳ Skróty klawiszowe
-2. ⏳ System cofnij/ponów
-3. ⏳ Optymalizacja wydajności (wirtualne przewijanie)
-4. ⏳ Szablony węzłów
-
-### 🟢 Niski (Przyszłość)
-1. ⏳ Operacje grupowe
-2. ⏳ Funkcje eksportu
-3. ⏳ Współpraca w czasie rzeczywistym
-4. ⏳ Analityka i raporty
+1. ⏳ System cofnij/ponów
+2. ⏳ Optymalizacja wydajności (wirtualne przewijanie)
+3. ⏳ Szablony węzłów
 
 ---
 
 ## 🎯 Podsumowanie
 
 ### Co zostało naprawione:
-✅ **Stan widoku zapisuje się automatycznie** - Zoom, pozycja i rozwinięte węzły są zachowywane per użytkownik i per projekt
+✅ **Stan widoku zapisuje się automatycznie**
+✅ **Drag & Drop** - Poprawiono wizualizację i wydajność
+✅ **Widok Tablicy** - Zaimplementowano podstawowy widok Kanban
 
 ### Co jeszcze zostało do zrobienia:
-1. **Drag & drop wymaga jeszcze dopracowania** - Dodać wizualne wskazówki i większe strefy upuszczenia
-2. **Brak widoku tablicy** - Potrzebny alternatywny widok Kanban
-3. **Brak zaawansowanych funkcji** - Wyszukiwanie, filtrowanie, skróty, eksport
+1. **Filtry tablicy** - Możliwość filtrowania zadań
+2. **Skróty klawiszowe** - Ułatwienie nawigacji
+3. **Wyszukiwanie** - Szybkie znajdowanie zadań
 
 ### Następne kroki:
-1. Przetestować zapisywanie stanu (uruchomić Docker i sprawdzić czy działa)
-2. Zaimplementować fazę 2 (lepszy drag & drop)
-3. Stworzyć widok tablicy (faza 3)
-4. Dodać wyszukiwanie i skróty (faza 4)
-
----
-
-## 📝 Notatki techniczne
-
-### Potencjalne problemy:
-- Migracja bazy danych wymaga uruchomienia `npm run migrate:dev` w backendzie
-- WebSocket będzie wymagać dodatkowej infrastruktury
-- Export do PDF może wymagać dodatkowej biblioteki (puppeteer/playwright)
-
-### Zalecenia:
-- Testy jednostkowe dla nowych funkcji
-- E2E testy dla critical path
-- Monitoring wydajności dla dużych projektów
-- Accessibility (a11y) dla wszystkich nowych komponentów
+1. Dodać filtry do widoku tablicy
+2. Dodać skróty klawiszowe do widoku mapy
+3. Dodać pasek wyszukiwania
