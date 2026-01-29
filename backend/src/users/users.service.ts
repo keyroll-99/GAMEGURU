@@ -121,7 +121,7 @@ export class UsersService {
     await fs.promises.writeFile(filePath, file.buffer);
 
     // Aktualizuj URL w bazie
-    const avatarUrl = `${this.UPLOADS_DIR}/${filename}`;
+    const avatarUrl = `/${this.UPLOADS_DIR}/${filename}`;
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { avatar_url: avatarUrl },

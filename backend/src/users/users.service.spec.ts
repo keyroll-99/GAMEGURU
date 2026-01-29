@@ -63,7 +63,7 @@ describe('UsersService', () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(user);
       (prismaService.user.update as jest.Mock).mockResolvedValue({
         ...user,
-        avatar_url: `uploads/avatars/${userId}-${Date.now()}.jpg`,
+        avatar_url: `/uploads/avatars/${userId}-${Date.now()}.jpg`,
       });
 
       // Mock fs calls
