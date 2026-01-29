@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import { SaveViewStateDto } from './dto'
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { SaveViewStateDto } from './dto';
 
 @Injectable()
 export class ViewStateService {
@@ -17,22 +17,22 @@ export class ViewStateService {
           project_id: projectId,
         },
       },
-    })
+    });
   }
 
   /**
    * Save or update user's view state for a project
    */
   async saveViewState(userId: string, dto: SaveViewStateDto) {
-    const { projectId, viewType, zoom, panX, panY, expandedNodes } = dto
+    const { projectId, viewType, zoom, panX, panY, expandedNodes } = dto;
 
     // Build update data - only include fields that are provided
-    const updateData: any = {}
-    if (viewType !== undefined) updateData.view_type = viewType
-    if (zoom !== undefined) updateData.zoom = zoom
-    if (panX !== undefined) updateData.pan_x = panX
-    if (panY !== undefined) updateData.pan_y = panY
-    if (expandedNodes !== undefined) updateData.expanded_nodes = expandedNodes
+    const updateData: any = {};
+    if (viewType !== undefined) updateData.view_type = viewType;
+    if (zoom !== undefined) updateData.zoom = zoom;
+    if (panX !== undefined) updateData.pan_x = panX;
+    if (panY !== undefined) updateData.pan_y = panY;
+    if (expandedNodes !== undefined) updateData.expanded_nodes = expandedNodes;
 
     return this.prisma.userViewState.upsert({
       where: {
@@ -51,7 +51,7 @@ export class ViewStateService {
         expanded_nodes: expandedNodes || [],
       },
       update: updateData,
-    })
+    });
   }
 
   /**
@@ -65,6 +65,6 @@ export class ViewStateService {
           project_id: projectId,
         },
       },
-    })
+    });
   }
 }

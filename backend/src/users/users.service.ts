@@ -108,13 +108,17 @@ export class UsersService {
 
     if (currentUser?.avatar_url) {
       const oldFilePath = path.join(process.cwd(), currentUser.avatar_url);
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+      try {
+        await fs.promises.unlink(oldFilePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
       }
     }
 
     // Zapisz nowy plik
-    fs.writeFileSync(filePath, file.buffer);
+    await fs.promises.writeFile(filePath, file.buffer);
 
     // Aktualizuj URL w bazie
     const avatarUrl = `${this.UPLOADS_DIR}/${filename}`;
