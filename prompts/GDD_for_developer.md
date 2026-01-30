@@ -1,4 +1,4 @@
-# GameGuru - Specyfikacja Techniczna MVP / v1.0
+# gtrip - Specyfikacja Techniczna MVP / v1.0
 
 ## 1. Przegląd Systemu
 Narzędzie do zarządzania projektami gier oparte na nieskończonej, hierarchicznej mapie myśli (Mind Map) zamiast klasycznej tablicy Kanban.

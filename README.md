@@ -1,6 +1,6 @@
-# GameGuru 🎮
+# gtrip
 
-GameGuru to nowoczesne narzędzie do zarządzania projektami z naciskiem na wizualizację w formie map myśli. Projekt składa się z backendu w NestJS oraz frontendu w Vue 3.
+gtrip to nowoczesne narzędzie do zarządzania projektami z naciskiem na wizualizację w formie map myśli. Projekt składa się z backendu w NestJS oraz frontendu w Vue 3.
 
 ## 🏗️ Architektura
 
@@ -23,7 +23,7 @@ Najłatwiejszy sposób na uruchomienie całej aplikacji (baza danych + backend +
 1. Sklonuj repozytorium:
    ```bash
    git clone <repo-url>
-   cd GameGuru
+   cd gtrip
    ```
 
 2. Skonfiguruj zmienne środowiskowe:

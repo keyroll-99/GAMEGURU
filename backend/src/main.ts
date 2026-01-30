@@ -42,8 +42,8 @@ async function bootstrap() {
   // Swagger Configuration
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('GameGuru API')
-      .setDescription('API documentation for GameGuru project management tool')
+      .setTitle('gtrip API')
+      .setDescription('API documentation for gtrip project management tool')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

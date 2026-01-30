@@ -6,10 +6,10 @@ import { RouterLink } from 'vue-router'
   <div class="home">
     <section class="hero">
       <h1 class="hero-title">
-        🎮 <span class="gradient-text">GameGuru</span>
+        <span class="gradient-text">gtrip</span>
       </h1>
       <p class="hero-subtitle">
-        Zarządzaj projektami gier w wizualny sposób z wykorzystaniem mind map
+        Zarządzaj projektami w wizualny sposób z wykorzystaniem mind map
       </p>
       <div class="hero-actions">
         <RouterLink to="/register" class="btn btn-primary">Rozpocznij za darmo</RouterLink>

@@ -26,8 +26,7 @@ function handleLogout() {
     <header class="header">
       <div class="header-container">
         <RouterLink to="/" class="logo">
-          <span class="logo-icon">🎮</span>
-          <span class="logo-text">GameGuru</span>
+          <span class="logo-text">gtrip</span>
         </RouterLink>
 
         <nav class="nav">
@@ -64,7 +63,7 @@ function handleLogout() {
 
     <footer class="footer">
       <div class="footer-container">
-        <p>&copy; {{ new Date().getFullYear() }} GameGuru. Wszystkie prawa zastrzeżone.</p>
+        <p>&copy; {{ new Date().getFullYear() }} gtrip. Wszystkie prawa zastrzeżone.</p>
       </div>
     </footer>
   </div>

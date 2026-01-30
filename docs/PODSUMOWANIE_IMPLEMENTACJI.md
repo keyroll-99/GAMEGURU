@@ -1,4 +1,4 @@
-# GameGuru MindMap - Podsumowanie Implementacji
+# gtrip MindMap - Podsumowanie Implementacji
 
 ## Co zostało zrobione? ✅
 
