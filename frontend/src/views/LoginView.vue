@@ -2,10 +2,12 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectsStore } from '@/stores/projects'
 import { useToast } from 'vue-toastification'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const projectsStore = useProjectsStore()
 const toast = useToast()
 
 const email = ref('')
@@ -27,6 +29,21 @@ async function handleSubmit() {
 
   if (result.success) {
     toast.success('Zalogowano pomyślnie!')
+
+    // Sprawdź czy jest oczekujące zaproszenie
+    const pendingToken = localStorage.getItem('pendingInviteToken')
+    if (pendingToken) {
+      localStorage.removeItem('pendingInviteToken')
+      const joinResult = await projectsStore.joinProject(pendingToken)
+      if (joinResult.success && joinResult.projectId) {
+        toast.success(joinResult.message || 'Dołączono do projektu')
+        router.push(`/projects/${joinResult.projectId}/board`)
+        return
+      } else {
+        toast.error(joinResult.message || 'Nie udało się dołączyć do projektu z zaproszenia')
+      }
+    }
+
     router.push('/dashboard')
   } else {
     // errorMessage.value = result.message

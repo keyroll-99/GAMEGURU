@@ -156,4 +156,30 @@ export class ProjectsController {
       memberIdToRemove,
     );
   }
+
+  // ==========================================
+  // INVITATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * GET /projects/:id/invitation - Pobranie linku zaproszeniowego (tylko owner)
+   */
+  @Get(':id/invitation')
+  getInvitationLink(
+    @Param('id', ParseUUIDPipe) projectId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.projectsService.getInvitationLink(projectId, userId);
+  }
+
+  /**
+   * POST /projects/join/:token - Dołączenie do projektu przez link
+   */
+  @Post('join/:token')
+  joinProject(
+    @Param('token') token: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.projectsService.joinProjectByToken(userId, token);
+  }
 }

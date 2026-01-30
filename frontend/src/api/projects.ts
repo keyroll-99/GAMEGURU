@@ -113,4 +113,15 @@ export const projectsApi = {
     const response = await apiClient.delete(`/projects/${projectId}/members/me`)
     return response.data
   },
+
+  // Invitations
+  async getInvitationLink(projectId: string): Promise<{ token: string; expires_at: string | null }> {
+    const response = await apiClient.get(`/projects/${projectId}/invitation`)
+    return response.data
+  },
+
+  async joinProject(token: string): Promise<{ message: string; projectId: string }> {
+    const response = await apiClient.post(`/projects/join/${token}`)
+    return response.data
+  },
 }
