@@ -50,9 +50,13 @@ export class AuthService {
         },
       });
 
+      // Generowanie tokenów
+      const tokens = await this.generateTokens(user.id, user.email);
+
       return {
         message: 'Rejestracja zakończona sukcesem',
         user,
+        ...tokens,
       };
     } catch (error) {
       throw new InternalServerErrorException(

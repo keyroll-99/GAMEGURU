@@ -203,6 +203,32 @@ export const useProjectsStore = defineStore('projects', () => {
     members.value = []
   }
 
+  async function getInvitationLink(projectId: string) {
+    try {
+      return await projectsApi.getInvitationLink(projectId)
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Nie udało się pobrać linku zaproszeniowego'
+      return { token: null, error: message }
+    }
+  }
+
+  async function joinProject(token: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await projectsApi.joinProject(token)
+      // Refresh projects list if needed
+      await fetchProjects()
+      return { success: true, message: result.message, projectId: result.projectId }
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Nie udało się dołączyć do projektu'
+      error.value = message
+      return { success: false, message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     projects,
@@ -227,5 +253,7 @@ export const useProjectsStore = defineStore('projects', () => {
     removeMember,
     leaveProject,
     clearCurrentProject,
+    getInvitationLink,
+    joinProject,
   }
 })

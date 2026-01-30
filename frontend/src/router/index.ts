@@ -32,6 +32,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/invite/:token',
+      name: 'invite',
+      component: () => import('../views/InviteView.vue'),
+    },
+    {
       path: '/projects/:id/settings',
       name: 'project-settings',
       component: () => import('../views/ProjectSettingsView.vue'),

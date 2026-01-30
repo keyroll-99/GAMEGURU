@@ -7,6 +7,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma';
 import {
   CreateProjectDto,
@@ -486,6 +487,119 @@ export class ProjectsService {
 
     return {
       message: 'Opuściłeś projekt',
+    };
+  }
+
+  // ==========================================
+  // INVITATIONS
+  // ==========================================
+
+  /**
+   * Generuje lub pobiera istniejący link zaproszeniowy dla projektu
+   */
+  async getInvitationLink(projectId: string, userId: string) {
+    const project = await this.findOne(projectId, userId);
+
+    // Tylko owner może generować linki zaproszeniowe
+    if (project.owner_id !== userId) {
+      throw new ForbiddenException(
+        'Tylko właściciel może generować linki zaproszeniowe',
+      );
+    }
+
+    // Sprawdź czy istnieje aktywne zaproszenie
+    const existingInvitation = await this.prisma.projectInvitation.findFirst({
+      where: {
+        project_id: projectId,
+        OR: [{ expires_at: null }, { expires_at: { gt: new Date() } }],
+      },
+    });
+
+    if (existingInvitation) {
+      return {
+        token: existingInvitation.token,
+        expires_at: existingInvitation.expires_at,
+      };
+    }
+
+    // Utwórz nowe zaproszenie
+    const token = crypto.randomBytes(32).toString('hex');
+    const invitation = await this.prisma.projectInvitation.create({
+      data: {
+        project_id: projectId,
+        token,
+        created_by: userId,
+        // Domyślnie bezterminowe
+      },
+    });
+
+    return {
+      token: invitation.token,
+      expires_at: invitation.expires_at,
+    };
+  }
+
+  /**
+   * Dołącza użytkownika do projektu na podstawie tokenu
+   */
+  async joinProjectByToken(userId: string, token: string) {
+    // Znajdź zaproszenie
+    const invitation = await this.prisma.projectInvitation.findUnique({
+      where: { token },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException(
+        'Nieprawidłowy lub nieaktywny link zaproszeniowy',
+      );
+    }
+
+    // Sprawdź ważność (jeśli ustawiona)
+    if (invitation.expires_at && invitation.expires_at < new Date()) {
+      throw new BadRequestException('Link zaproszeniowy wygasł');
+    }
+
+    const projectId = invitation.project.id;
+
+    // Sprawdź czy użytkownik jest już członkiem
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: {
+        project_id_user_id: {
+          project_id: projectId,
+          user_id: userId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      // Użytkownik już jest członkiem - po prostu zwróć sukces
+      return {
+        message: 'Jesteś już członkiem tego projektu',
+        projectId,
+      };
+    }
+
+    // Dodaj członka
+    await this.prisma.projectMember.create({
+      data: {
+        project_id: projectId,
+        user_id: userId,
+        role: ProjectRole.MEMBER,
+      },
+    });
+
+    // Zaktualizuj licznik użycia zaproszenia
+    await this.prisma.projectInvitation.update({
+      where: { id: invitation.id },
+      data: { used_count: { increment: 1 } },
+    });
+
+    return {
+      message: 'Dołączyłeś do projektu',
+      projectId,
     };
   }
 }

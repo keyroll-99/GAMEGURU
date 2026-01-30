@@ -29,6 +29,7 @@ model User {
   node_changes     NodeHistory[]
   story_history    StoryHistory[]
   view_states      UserViewState[]
+  invitations      ProjectInvitation[]
 
   @@map("users")
 }
@@ -53,6 +54,7 @@ model Project {
   notes         ProjectNote[]
   storyElements StoryElement[]
   view_states   UserViewState[]
+  invitations   ProjectInvitation[]
 
   @@map("projects")
 }
@@ -88,6 +90,24 @@ model ProjectMember {
 
   @@id([project_id, user_id])
   @@map("project_members")
+}
+
+model ProjectInvitation {
+  id         String    @id @default(uuid()) @db.Uuid
+  project_id String    @db.Uuid
+  token      String    @unique @db.VarChar(100)
+  used_count Int       @default(0)
+  expires_at DateTime?
+  created_at DateTime  @default(now())
+  created_by String    @db.Uuid
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [created_by], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@index([token])
+  @@map("project_invitations")
 }
 
 // ==========================================

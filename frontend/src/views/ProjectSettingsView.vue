@@ -39,10 +39,8 @@ const otherMembers = computed(() =>
   projectsStore.members.filter(m => m.user_id !== authStore.user?.id)
 )
 
-const projectLink = computed(() => {
-  const baseUrl = window.location.origin
-  return `${baseUrl}/projects/${projectId.value}/board`
-})
+const projectLink = ref('')
+const isGeneratingLink = ref(false)
 
 onMounted(async () => {
   await loadProject()
@@ -54,7 +52,21 @@ async function loadProject() {
     editName.value = project.name
     editDescription.value = project.description || ''
     await projectsStore.fetchMembers(projectId.value)
+
+    if (projectsStore.currentProject?.owner_id === authStore.user?.id) {
+      await loadInvitationLink()
+    }
   }
+}
+
+async function loadInvitationLink() {
+  isGeneratingLink.value = true
+  const result = await projectsStore.getInvitationLink(projectId.value)
+  if (result.token) {
+     const baseUrl = window.location.origin
+     projectLink.value = `${baseUrl}/invite/${result.token}`
+  }
+  isGeneratingLink.value = false
 }
 
 function showSuccess(message: string) {
@@ -276,13 +288,14 @@ function goBack() {
           <div class="invite-link-row">
             <input 
               type="text" 
-              :value="projectLink" 
+              :value="isGeneratingLink ? 'Generowanie...' : projectLink"
               readonly 
               class="invite-link-input"
             />
             <button 
               class="btn btn-secondary" 
               @click="copyProjectLink"
+              :disabled="!projectLink || isGeneratingLink"
             >
               {{ linkCopied ? '✓ Skopiowano!' : '📋 Kopiuj link' }}
             </button>

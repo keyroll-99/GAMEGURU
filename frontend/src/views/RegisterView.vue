@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectsStore } from '@/stores/projects'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const projectsStore = useProjectsStore()
 
 const username = ref('')
 const email = ref('')
@@ -44,10 +46,24 @@ async function handleSubmit() {
   })
 
   if (result.success) {
-    successMessage.value = 'Konto utworzone! Możesz się teraz zalogować.'
+    successMessage.value = 'Konto utworzone! Logowanie...'
+
+    // Sprawdź czy jest oczekujące zaproszenie
+    const pendingToken = localStorage.getItem('pendingInviteToken')
+    if (pendingToken) {
+      localStorage.removeItem('pendingInviteToken')
+      const joinResult = await projectsStore.joinProject(pendingToken)
+      if (joinResult.success && joinResult.projectId) {
+        setTimeout(() => {
+          router.push(`/projects/${joinResult.projectId}/board`)
+        }, 1500)
+        return
+      }
+    }
+
     setTimeout(() => {
-      router.push('/login')
-    }, 2000)
+      router.push('/dashboard')
+    }, 1500)
   } else {
     errorMessage.value = result.message
   }

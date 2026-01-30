@@ -51,6 +51,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(data)
       setUser(response.user as User)
+      if (response.accessToken && response.refreshToken) {
+        setTokens(response.accessToken, response.refreshToken)
+      }
       return { success: true, message: response.message }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Błąd rejestracji'
