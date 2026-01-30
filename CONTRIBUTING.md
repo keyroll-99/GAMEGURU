@@ -1,6 +1,6 @@
-# 🎓 Wprowadzenie dla Developera - GameGuru
+# 🎓 Wprowadzenie dla Developera - gtrip
 
-Witaj w projekcie GameGuru! Ten dokument pomoże Ci zrozumieć strukturę projektu i rozpocząć naukę Vue 3 oraz NestJS.
+Witaj w projekcie gtrip! Ten dokument pomoże Ci zrozumieć strukturę projektu i rozpocząć naukę Vue 3 oraz NestJS.
 
 ## 📖 Spis treści
 

@@ -1,4 +1,4 @@
-# GameGuru - Lista Zadań do Implementacji
+# gtrip - Lista Zadań do Implementacji
 
 ## Legenda Statusów
 - [ ] Do zrobienia

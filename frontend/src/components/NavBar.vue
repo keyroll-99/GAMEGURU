@@ -28,7 +28,7 @@ function handleLogout() {
   <header class="navbar">
     <div class="navbar-container">
       <RouterLink to="/" class="navbar-brand">
-        🎮 GameGuru
+        gtrip
       </RouterLink>
 
       <nav class="navbar-nav">

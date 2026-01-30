@@ -1,4 +1,4 @@
-# GameGuru MindMap - Lista Ulepszeń
+# gtrip MindMap - Lista Ulepszeń
 
 ## Podsumowanie problemów
 Na podstawie zgłoszenia zidentyfikowano następujące problemy:

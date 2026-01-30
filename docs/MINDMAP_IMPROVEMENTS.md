@@ -1,4 +1,4 @@
-# GameGuru MindMap - Analysis & Improvement Recommendations
+# gtrip MindMap - Analysis & Improvement Recommendations
 
 ## Problem Summary (from Polish feedback)
 The user reported several issues with the MindMap functionality:
@@ -256,7 +256,7 @@ Add visual feedback for save operations:
 
 ## Conclusion
 
-The current implementation provides a solid foundation. The completed Phase 1 (view state persistence) addresses the core issue of losing user preferences. The recommended improvements in Phases 2-5 will significantly enhance the user experience and make GameGuru a more powerful project management tool.
+The current implementation provides a solid foundation. The completed Phase 1 (view state persistence) addresses the core issue of losing user preferences. The recommended improvements in Phases 2-5 will significantly enhance the user experience and make gtrip a more powerful project management tool.
 
 Key focus areas:
 1. **Smooth interactions** - Better drag & drop, visual feedback
